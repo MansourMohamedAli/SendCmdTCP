@@ -5,7 +5,7 @@ from logger import logger
 import argparse
 
 DEFAULT_SERVER_PORT = 52000
-DEFAULT_MAX_RETRIES = 1  # Maximum number of connection attempts
+DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
 
 def connect_to_server(server_host_ip, server_host_port, max_retries):
@@ -21,7 +21,7 @@ def connect_to_server(server_host_ip, server_host_port, max_retries):
             attempts += 1
             logger.error(f"Connection attempt {attempts}/{max_retries} failed: {e}. Retrying...")
     else:
-        logger.critical(f'Could not connect to server after {max_retries} attempts... Exiting')
+        logger.critical(f'Could not connect to server after {max_retries} attempt(s)... Exiting')
         sys.exit(-1)
 
 
@@ -37,17 +37,17 @@ def main(args=None):
     parser.add_argument('--host', type=str, help='Server IP address.')
     parser.add_argument('--port', type=int, default=DEFAULT_SERVER_PORT, help=f'The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.')
     parser.add_argument('--command', type=str, help='Command to send. If command is multiple words, enclose in \"\".')
-    parser.add_argument('--retries', type=int, default=DEFAULT_MAX_RETRIES, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_RETRIES}.')
+    parser.add_argument('--attempts', type=int, default=DEFAULT_MAX_ATTEMPTS, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.')
     parser.add_argument('--feedback', type=int, default=0, help=f'Flag to allow Server to send back command. set 1 to allow feedback.')
     args = parser.parse_args(args)
 
     server_host_ip   = args.host 
     server_host_port = args.port
     command          = args.command
-    max_retries      = args.retries
+    max_attempts     = args.attempts
     feedback         = args.feedback
 
-    client_socket = connect_to_server(server_host_ip, server_host_port, max_retries)
+    client_socket = connect_to_server(server_host_ip, server_host_port, max_attempts)
 
     while True:
         try:
