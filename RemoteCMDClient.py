@@ -7,6 +7,7 @@ import argparse
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_RETRIES = 1  # Maximum number of connection attempts
 
+
 def connect_to_server(server_host_ip, server_host_port, max_retries):
     """Attempt to connect to the server and return the socket object."""
     attempts = 0 
@@ -23,13 +24,14 @@ def connect_to_server(server_host_ip, server_host_port, max_retries):
         logger.critical(f'Could not connect to server after {max_retries} attempts... Exiting')
         sys.exit(-1)
 
-def main():
-    if len(sys.argv) < 2:
-        logger.info("Usage: python client.py <command>")
-        return
 
-    # SERVER_HOST_IP = sys.argv[1], ' '.join(sys.argv[2:])
-    # logger.info(f'Attempting to send command:{command} to server IP:{SERVER_HOST_IP}')
+def main(args=None):
+    if args is None:
+        args = sys.argv[1:]
+        
+        if len(sys.argv) < 2:
+            logger.info(f"Type 'RemoteCMDClient.exe -h' or 'RemoteCMDClient.exe --help' for usage.")
+            return
 
     parser = argparse.ArgumentParser(description='Client for sending commands to the server.')
     parser.add_argument('--host', type=str, help='Server IP address.')
@@ -37,14 +39,13 @@ def main():
     parser.add_argument('--command', type=str, help='Command to send. If command is multiple words, enclose in \"\".')
     parser.add_argument('--retries', type=int, default=DEFAULT_MAX_RETRIES, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_RETRIES}.')
     parser.add_argument('--feedback', type=int, default=0, help=f'Flag to allow Server to send back command. set 1 to allow feedback.')
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     server_host_ip   = args.host 
     server_host_port = args.port
     command          = args.command
     max_retries      = args.retries
     feedback         = args.feedback
-
 
     client_socket = connect_to_server(server_host_ip, server_host_port, max_retries)
 
@@ -69,6 +70,7 @@ def main():
         logger.info(output)
     
     client_socket.close()
+
 
 if __name__ == "__main__":
     main()
