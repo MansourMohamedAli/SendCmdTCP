@@ -1,5 +1,4 @@
 import socket
-import time
 import sys
 from logger import logger
 import argparse
@@ -23,7 +22,38 @@ def connect_to_server(server_host_ip, server_host_port, max_retries):
             logger.error(f"Connection attempt {attempts}/{max_retries} failed: {e}. Retrying...")
     else:
         logger.critical(f'Could not connect to server after {max_retries} attempt(s)... Exiting')
-        sys.exit(-1)
+
+
+def open_connection_thread(server_host_ip, server_host_port, command, max_attempts, feedback):
+    """New thread is created to not block code execution of GUIs that use this application."""
+    client_socket = connect_to_server(server_host_ip, server_host_port, max_attempts)
+    if client_socket:
+        while True:
+            try:
+                # t1 = threading.Thread(target=client_socket.send, args=[command.encode()])
+                # t1.start()
+                client_socket.send(command.encode())
+                logger.info(f"Command '{command}' sent to the server.")
+                break
+
+            except socket.error as e:
+                logger.error(f"Error sending command: {e}. Reconnecting...")
+                client_socket = connect_to_server()
+                
+            except KeyboardInterrupt:
+                logger.error("Interrupted by user. Exiting...")
+                break
+
+            except Exception as e:
+                logger.error(f"An unexpected error occurred: {e}")
+                break
+        
+        # Receive the output from the server
+        if feedback:
+            output = client_socket.recv(4096).decode()
+            logger.info(output)
+        
+        client_socket.close()
 
 
 def main(args=None):
@@ -48,32 +78,9 @@ def main(args=None):
     max_attempts     = args.attempts
     feedback         = args.feedback
 
-    client_socket = connect_to_server(server_host_ip, server_host_port, max_attempts)
-
-    while True:
-        try:
-            t1 = threading.Thread(target=client_socket.send, args=[command.encode()])
-            t1.start()
-            # client_socket.send(command.encode())
-            logger.info(f"Command '{command}' sent to the server.")
-            break
-        except socket.error as e:
-            logger.error(f"Error sending command: {e}. Reconnecting...")
-            client_socket = connect_to_server()
-        except KeyboardInterrupt:
-            logger.error("Interrupted by user. Exiting...")
-            break
-        except Exception as e:
-            logger.error(f"An unexpected error occurred: {e}")
-            break
+    t1 = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, feedback])
+    t1.start()
     
-    # Receive the output from the server
-    if feedback:
-        output = client_socket.recv(4096).decode()
-        logger.info(output)
-    
-    client_socket.close()
-
 
 if __name__ == "__main__":
     main()

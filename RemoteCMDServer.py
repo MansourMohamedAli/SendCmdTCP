@@ -2,7 +2,6 @@ import socket
 import subprocess
 import os
 from logger import logger
-import threading
 
 # Define the server address and port
 
@@ -57,9 +56,7 @@ def main():
                         logger.info(command)
                     else:
                         # Execute the command and get the output
-                        t1 = threading.Thread(target=execute_command, args=[command, cwd])
-                        t1.start()
-                        # output = execute_command(command, cwd)
+                        output = execute_command(command, cwd)
                         # logger.info(command)
 
                         if output:
