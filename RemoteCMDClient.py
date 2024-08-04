@@ -3,6 +3,7 @@ import time
 import sys
 from logger import logger
 import argparse
+import threading
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
@@ -51,7 +52,9 @@ def main(args=None):
 
     while True:
         try:
-            client_socket.send(command.encode())
+            t1 = threading.Thread(target=client_socket.send, args=[command.encode()])
+            t1.start()
+            # client_socket.send(command.encode())
             logger.info(f"Command '{command}' sent to the server.")
             break
         except socket.error as e:
