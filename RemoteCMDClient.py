@@ -78,8 +78,8 @@ def main(args=None):
     max_attempts     = args.attempts
     feedback         = args.feedback
 
-    t1 = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, feedback])
-    t1.start()
+    connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, feedback])
+    connection_thread.start()
     
 
 if __name__ == "__main__":
