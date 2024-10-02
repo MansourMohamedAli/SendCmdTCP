@@ -1,10 +1,10 @@
 import socket
 import subprocess
 import os
+import sys
 from logger import logger
 
 # Define the server address and port
-
 SERVER_HOST_NAME = socket.gethostname()
 IP_ADDRESS = socket.gethostbyname(SERVER_HOST_NAME)
 SERVER_PORT = 52000
@@ -12,7 +12,7 @@ SERVER_PORT = 52000
 def execute_command(command, cwd):
     """Execute a shell command and return its output."""
     try:
-        result = subprocess.run(command, capture_output=True, text=True, shell=True, check=True, cwd=cwd)
+        result = subprocess.Popen(command, text=True, shell=True, cwd=cwd)
         return result.stdout
     except subprocess.CalledProcessError as e:
         return f"Command '{e.cmd}' returned non-zero exit status {e.returncode}. Output: {e.output}"
@@ -31,53 +31,36 @@ def main():
         while True:
             client_socket, client_address = server_socket.accept()
             logger.debug(f"Accepted connection from {client_address}")
+            command = client_socket.recv(1024).decode()
+            if command:
+                if command.lower() == 'exit':
+                    logger.info("Exiting...")
+                    sys.exit()
 
-            try:
-                # Receive the command from the client
-                command = client_socket.recv(1024).decode()
-                if command:
-                    if command.lower() == 'exit':
-                        logger.info("Exiting...")
-                        break
-
-                    # Check if the command is a 'cd' command
-                    if command.startswith('cd '):
-                        try:
-                            new_dir = command[3:].strip()
-                            os.chdir(new_dir)
-                            cwd = os.getcwd()  # Update the current working directory
-                            logger.info(command)
-                        except FileNotFoundError as e:
-                            logger.error(f"Error: {e}")
-                    elif len(command) > 1 and command[1] == ':': # Changing Drive
-                        new_dir = command[:2].strip()
+                # Check if the command is a 'cd' command
+                if command.startswith('cd '):
+                    try:
+                        new_dir = command[3:].strip()
                         os.chdir(new_dir)
                         cwd = os.getcwd()  # Update the current working directory
                         logger.info(command)
+                    except FileNotFoundError as e:
+                        logger.error(f"Error: {e}")
+                elif len(command) > 1 and command[1] == ':': # Changing Drive
+                    new_dir = command[:2].strip()
+                    os.chdir(new_dir)
+                    cwd = os.getcwd()  # Update the current working directory
+                    logger.info(command)
+                else:
+                    # Execute the command and get the output
+                    output = execute_command(command, cwd)
+                    if output:
+                        logger.info(f'Command from {client_address[0]}:\n{command}\n' + '-'*25 + ' Output ' + '-'*25 + f'\n\n{output}\n' + '-'*23 + ' End Output ' + '-'*23 + '\n')
                     else:
-                        # Execute the command and get the output
-                        output = execute_command(command, cwd)
-                        # logger.info(command)
+                        logger.info(command)
 
-                        if output:
-                            logger.info(f'Command from {client_address[0]}:\n{command}\n' + '-'*25 + ' Output ' + '-'*25 + f'\n\n{output}\n' + '-'*23 + ' End Output ' + '-'*23 + '\n')
-                        else:
-                            logger.info(command)
-   
-                        client_socket.send(output.encode())
-                        logger.debug(f"Sent output to client: {client_address}")
-
-            except KeyboardInterrupt:
-                logger.info("Interrupted by user. Exiting...")
-                break
-
-            except socket.error as e:
-                logger.error(f"Socket error: {e}")
-
-            # finally:
-            #     client_socket.close()
-            #     logger.info(f"Closed connection with {client_address}")
-
+    except socket.error as e:
+        logger.error(f"Socket error: {e}")
     finally:
         server_socket.close()
         logger.info("Server shut down.")

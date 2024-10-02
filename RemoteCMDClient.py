@@ -65,16 +65,16 @@ def main(args=None):
             return
 
     parser = argparse.ArgumentParser(description='Client for sending commands to the server.')
-    parser.add_argument('--host', type=str, help='Server IP address.')
+    parser.add_argument("host", type=str, help='Server IP address.')
+    parser.add_argument("command", type=str, help='Command to send. If command is multiple words, enclose in \"\".')
     parser.add_argument('--port', type=int, default=DEFAULT_SERVER_PORT, help=f'The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.')
-    parser.add_argument('--command', type=str, help='Command to send. If command is multiple words, enclose in \"\".')
     parser.add_argument('--attempts', type=int, default=DEFAULT_MAX_ATTEMPTS, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.')
     parser.add_argument('--feedback', type=int, default=0, help=f'Flag to allow Server to send back command. set 1 to allow feedback.')
     args = parser.parse_args(args)
 
     server_host_ip   = args.host 
-    server_host_port = args.port
     command          = args.command
+    server_host_port = args.port
     max_attempts     = args.attempts
     feedback         = args.feedback
 
