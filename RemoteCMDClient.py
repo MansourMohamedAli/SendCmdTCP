@@ -24,7 +24,7 @@ def connect_to_server(server_host_ip, server_host_port, max_retries):
         logger.critical(f'Could not connect to server after {max_retries} attempt(s)... Exiting')
 
 
-def open_connection_thread(server_host_ip, server_host_port, command, max_attempts, feedback):
+def open_connection_thread(server_host_ip, server_host_port, command, max_attempts):
     """New thread is created to not block code execution of GUIs that use this application."""
     client_socket = connect_to_server(server_host_ip, server_host_port, max_attempts)
     if client_socket:
@@ -48,11 +48,6 @@ def open_connection_thread(server_host_ip, server_host_port, command, max_attemp
                 logger.error(f"An unexpected error occurred: {e}")
                 break
         
-        # Receive the output from the server
-        if feedback:
-            output = client_socket.recv(4096).decode()
-            logger.info(output)
-        
         client_socket.close()
 
 
@@ -75,9 +70,10 @@ def main(args=None):
     command          = args.command
     server_host_port = args.port
     max_attempts     = args.attempts
-    feedback         = args.feedback
 
-    connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, feedback])
+    server_host_ip = socket.gethostbyname(server_host_ip)
+
+    connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts])
     connection_thread.start()
     
 
