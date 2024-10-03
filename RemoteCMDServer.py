@@ -53,11 +53,8 @@ def main():
                     logger.info(command)
                 else:
                     # Execute the command and get the output
-                    output = execute_command(command, cwd)
-                    if output:
-                        logger.info(f'Command from {client_address[0]}:\n{command}\n' + '-'*25 + ' Output ' + '-'*25 + f'\n\n{output}\n' + '-'*23 + ' End Output ' + '-'*23 + '\n')
-                    else:
-                        logger.info(command)
+                    logger.info(f'Executing {command}')
+                    execute_command(command, cwd)
 
     except socket.error as e:
         logger.error(f"Socket error: {e}")
