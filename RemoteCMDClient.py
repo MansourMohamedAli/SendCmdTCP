@@ -47,9 +47,9 @@ def open_connection_thread(server_host_ip, server_host_port, command, max_attemp
                 break
             
         # Receive the output from the server
-        if feedback:
+        if feedback == 'true':
             output = client_socket.recv(4096).decode()
-            logger.debug(output)
+            logger.info(output)
         client_socket.close()
 
 
@@ -62,13 +62,13 @@ def main(args=None):
             return
 
     parser = argparse.ArgumentParser(description='Client for sending commands to the server.')
-    parser.add_argument("host", type=str, help='Server IP address.')
-    parser.add_argument("command", type=str, help='Command to send. If command is multiple words, enclose in \"\".')
-    parser.add_argument('--port', type=int, default=DEFAULT_SERVER_PORT, help=f'The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.')
-    parser.add_argument('--attempts', type=int, default=DEFAULT_MAX_ATTEMPTS, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.')
-    parser.add_argument('--feedback', type=int, default=0, help=f'Flag to allow Server to send back command. set 1 to allow feedback.')
-    parser.add_argument("--loglevel", type=str.lower, help='Server IP address.', default="INFO",  choices=["debug", "info"])
-    parser.add_argument("--logfile", type=str.lower, help='Option to output to logfile', default="false",  choices=["true", "false"])
+    parser.add_argument("host",       type=str, help='Server IP address.')
+    parser.add_argument("command",    type=str, help='Command to send. If command is multiple words, enclose in \"\".')
+    parser.add_argument('--port',     type=int, help=f'The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.', default=DEFAULT_SERVER_PORT)
+    parser.add_argument('--attempts', type=int, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.', default=DEFAULT_MAX_ATTEMPTS)
+    parser.add_argument('--feedback', type=str.lower, help=f'Flag to allow Server to send back command.', default="false", choices=["true", "false"])
+    parser.add_argument("--loglevel", type=str.lower, help='Server IP address.', default="info",  choices=["debug", "info"])
+    parser.add_argument("--logfile",  type=str.lower, help='Option to output to logfile', default="false",  choices=["true", "false"])
 
     args = parser.parse_args(args)
 
