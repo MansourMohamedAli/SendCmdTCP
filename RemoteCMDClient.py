@@ -52,6 +52,16 @@ def open_connection_thread(server_host_ip, server_host_port, command, max_attemp
             logger.info(output)
         client_socket.close()
 
+def parse_args_from_file(file, parser):
+    # Read arguments from the file
+    with open(file, 'r') as f:
+        for line in f:
+            if line:
+                line = line.strip().split()
+                args = parser.parse_args(line)
+                print(args)
+        return 
+
 
 def main(args=None):
     if args is None:
@@ -62,13 +72,14 @@ def main(args=None):
             return
 
     parser = argparse.ArgumentParser(description='Client for sending commands to the server.')
-    parser.add_argument("host",       type=str, help='Server IP address.')
-    parser.add_argument("command",    type=str, help='Command to send. If command is multiple words, enclose in \"\".')
-    parser.add_argument('--port',     type=int, help=f'The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.', default=DEFAULT_SERVER_PORT)
-    parser.add_argument('--attempts', type=int, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.', default=DEFAULT_MAX_ATTEMPTS)
+    parser.add_argument("host",       type=str,       help='Server IP address.')
+    parser.add_argument("command",    type=str,       help='Command to send. If command is multiple words, enclose in \"\".')
+    parser.add_argument('--port',     type=int,       help=f'The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.', default=DEFAULT_SERVER_PORT)
+    parser.add_argument('--attempts', type=int,       help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.', default=DEFAULT_MAX_ATTEMPTS)
     parser.add_argument('--feedback', type=str.lower, help=f'Flag to allow Server to send back command.', default="false", choices=["true", "false"])
     parser.add_argument("--loglevel", type=str.lower, help='Server IP address.', default="info",  choices=["debug", "info"])
     parser.add_argument("--logfile",  type=str.lower, help='Option to output to logfile', default="false",  choices=["true", "false"])
+    parser.add_argument("--file",     type=str,       help='Option to process commands from file')
 
     args = parser.parse_args(args)
 
@@ -77,17 +88,34 @@ def main(args=None):
     server_host_port = args.port
     max_attempts     = args.attempts
     feedback         = args.feedback
+    loglevel         = args.loglevel
+    logfile          = args.logfile
+    file             = args.file
+    
+    parse_args_from_file(file, parser)
 
-    if args.logfile == "true":
-        log = Logger(level=args.loglevel, filename="RemoteCMDClient.log")
+
+    if logfile == "true":
+        log = Logger(level=loglevel, filename="RemoteCMDClient.log")
     else:
-        log = Logger(level=args.loglevel)
+        log = Logger(level=loglevel)
 
     server_host_ip = socket.gethostbyname(server_host_ip)
 
+    # feedback_list = []
+
+    # if file:
+    #     with open(file) as f:
+    #         for line in f:
+    #             line = line.rstrip()
+    #             connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, feedback, log.logger])
+    #             connection_thread.start()
+    # else:
+    #     connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, feedback, log.logger])
+    #     connection_thread.start()
+
     connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, feedback, log.logger])
-    connection_thread.start()
-    
+    connection_thread.start()        
 
 if __name__ == "__main__":
     main()
