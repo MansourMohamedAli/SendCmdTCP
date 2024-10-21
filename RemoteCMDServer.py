@@ -32,8 +32,9 @@ def start_server(logger):
     cwd = os.getcwd()  # Set the initial current working directory
     logger.info(f"Listening on {IP_ADDRESS}:{SERVER_PORT}...")
 
-    try:
-        while True:
+
+    while True:
+        try:
             client_socket, client_address = server_socket.accept()
             logger.debug(f"Accepted connection from {client_address}")
             full_command = client_socket.recv(1024).decode()
@@ -70,11 +71,8 @@ def start_server(logger):
                         else:
                             client_socket.send(return_code.encode())                            
 
-    except socket.error as e:
-        logger.error(f"Socket error: {e}")
-    finally:
-        server_socket.close()
-        logger.info("Server shut down.")
+        except socket.error as e:
+            logger.error(f"Socket error: {e}")
 
 def main(args=None):
     if args is None:
