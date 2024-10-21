@@ -63,7 +63,6 @@ def start_server(logger):
                     else:
                         # Execute the command and get the output
                         logger.info(f'Executing {command}')
-                        # print('=' *25 + ' Output ' + '=' *25)
                         return_code = execute_command(command, cwd)
                         if not return_code:
                             output = f'{SERVER_HOST_NAME} Received Command.'
