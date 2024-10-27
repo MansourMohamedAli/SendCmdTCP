@@ -63,26 +63,25 @@ def parse_args_from_file(file, parser, arg_groups_list):
                 arg_groups_list.append(args)
         return arg_groups_list
     
+
 def handle_threads(arg_groups_list:list):
     for args in arg_groups_list:
         if args.logfile == "true":
             log = Logger(level=args.loglevel, filename="RemoteCMDClient.log")
         else:
             log = Logger(level=args.loglevel)
-
         if args.host:
             server_host_ip = socket.gethostbyname(args.host)
-            connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, args.port, args.command, args.attempts, args.feedback, log.logger])
-            connection_thread.start()
-            print('ConnectionStarted') 
+            open_connection_thread(server_host_ip, args.port, args.command, args.attempts, args.feedback, log.logger)
+
 
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
         
-        # if len(sys.argv) < 2:
-        #     print(f"Type 'RemoteCMDClient.exe -h' or 'RemoteCMDClient.exe --help' for usage.")
-        #     return
+        if len(sys.argv) < 2:
+            print(f"Type 'RemoteCMDClient.exe -h' or 'RemoteCMDClient.exe --help' for usage.")
+            return
 
     parser = argparse.ArgumentParser(description='Client for sending commands to the server.')
     parser.add_argument("host",       type=str,       help='Server IP address.', nargs='?')
@@ -92,7 +91,7 @@ def main(args=None):
     parser.add_argument('--feedback', type=str.lower, help=f'Flag to allow Server to send back command.', default="false", choices=["true", "false"])
     parser.add_argument("--loglevel", type=str.lower, help='Server IP address.', default="info",  choices=["debug", "info"])
     parser.add_argument("--logfile",  type=str.lower, help='Option to output to logfile', default="false",  choices=["true", "false"])
-    parser.add_argument("--file",     type=str,       help='Option to process commands from file',default='commandlist.txt')
+    parser.add_argument("--file",     type=str,       help='Option to process commands from file')
 
     args = parser.parse_args(args)
     arg_groups_list = [args]
@@ -100,9 +99,6 @@ def main(args=None):
     if args.file: # Process lines in file
         parse_args_from_file(args.file, parser, arg_groups_list)
         del arg_groups_list[0] # Removes command line arguments so they won't have any affect.
-
-    # print(arg_groups_list)
-    # print(len(arg_groups_list))
 
     handle_threads(arg_groups_list)
 
