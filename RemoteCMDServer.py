@@ -2,9 +2,7 @@ import socket
 import subprocess
 import os
 import sys
-import argparse
-from logger import Logger
-import threading
+from logger import logger
 
 # TODO handle backslash character
 
@@ -23,7 +21,7 @@ def execute_command(command, cwd):
         return f"Command '{e.cmd}' returned non-zero exit status {e.returncode}. Output: {e.output}"
 
 
-def start_server(logger):
+def main():
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Reuse the socket address
@@ -31,7 +29,6 @@ def start_server(logger):
     server_socket.listen(5)
     cwd = os.getcwd()  # Set the initial current working directory
     logger.info(f"Listening on {IP_ADDRESS}:{SERVER_PORT}...")
-
 
     while True:
         try:
@@ -64,33 +61,10 @@ def start_server(logger):
                     else:
                         # Execute the command and get the output
                         logger.info(f'Executing {command}')
-                        return_code = execute_command(command, cwd)
-                        if not return_code:
-                            output = f'{SERVER_HOST_NAME} Received Command.'
-                            client_socket.send(output.encode())
-                        else:
-                            client_socket.send(return_code.encode())                            
+                        execute_command(command, cwd)
 
         except socket.error as e:
             logger.error(f"Socket error: {e}")
-
-def main(args=None):
-    if args is None:
-        args = sys.argv[1:]
-
-    parser = argparse.ArgumentParser(description='Client for sending commands to the server.')
-    parser.add_argument("--loglevel", type=str.lower, help='Server IP address.', default="INFO",  choices=["debug", "info"])
-    parser.add_argument("--logfile", type=str.lower, help='Option to output to logfile', default="false",  choices=["true", "false"])
-    args = parser.parse_args(args)
-
-    if args.logfile == "true":
-        log = Logger(level=args.loglevel, filename="RemoteCMDServer.log")
-    else:
-        log = Logger(level=args.loglevel)
-
-    thread = threading.Thread(target=start_server, args=[log.logger])
-    thread.start()
-        
 
 if __name__ == "__main__":
     main()
