@@ -16,7 +16,7 @@ def connect_to_server(server_host_ip, server_host_port, max_retries, iplocal):
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client_socket.bind((iplocal, 0))
             client_socket.connect((server_host_ip, server_host_port))
-            logger.info("Connected to server")
+            logger.debug("Connected to server")
             return client_socket
         except socket.error as e:
             attempts += 1
