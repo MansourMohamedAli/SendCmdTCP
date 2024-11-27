@@ -3,6 +3,7 @@ import sys
 from logger import logger
 import argparse
 import threading
+import time
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
@@ -64,6 +65,7 @@ def main(args=None):
     parser.add_argument('--port', type=int, default=DEFAULT_SERVER_PORT, help=f'The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.')
     parser.add_argument('--attempts', type=int, default=DEFAULT_MAX_ATTEMPTS, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.')
     parser.add_argument('--iplocal', type=str, default='', help=f'IP address of local network interface used to send command. Default will bind to all interfaces.')
+    parser.add_argument('--timer', type=str, default='no', help=f'timer option from command send to response.')
     args = parser.parse_args(args)
 
     server_host_ip   = args.host 
@@ -71,12 +73,13 @@ def main(args=None):
     server_host_port = args.port
     max_attempts     = args.attempts
     iplocal          = args.iplocal
+    timer            = args.timer
 
     # Get IP Address if a name is passed in by user.
     server_host_ip = socket.gethostbyname(server_host_ip)
 
     # Start connection in a thread.
-    connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, iplocal])
+    connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts, iplocal, timer])
     connection_thread.start()
     
 
