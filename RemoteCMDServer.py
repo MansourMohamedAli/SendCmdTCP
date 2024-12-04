@@ -61,7 +61,12 @@ def main():
                     else:
                         # Execute the command and get the output
                         logger.info(f'Executing {command}')
-                        execute_command(command, cwd)
+                        return_code = execute_command(command, cwd)
+                        if not return_code:
+                            output = f'{SERVER_HOST_NAME} Received Command.'
+                            client_socket.send(output.encode())
+                        else:
+                            client_socket.send(return_code.encode())
 
         except socket.error as e:
             logger.error(f"Socket error: {e}")
