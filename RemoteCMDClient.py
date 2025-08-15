@@ -45,10 +45,6 @@ def open_connection_thread(server_host_ip, server_host_port, command, max_attemp
                 logger.error("Interrupted by user. Exiting...")
                 break
 
-            except Exception as e:
-                logger.error(f"An unexpected error occurred: {e}")
-                break
-
         client_socket.close()
 
 
