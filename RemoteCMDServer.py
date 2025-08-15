@@ -1,7 +1,8 @@
+import os
 import socket
 import subprocess
-import os
 import sys
+
 from logger import logger
 
 # TODO handle backslash character
@@ -61,9 +62,7 @@ def main():
                     else:
                         # Execute the command and get the output
                         logger.info(f'Executing {command}')
-                        return_code = execute_command(command, cwd)
-                        output = f'{SERVER_HOST_NAME} Received Command. Return code: {return_code}'
-                        client_socket.send(output.encode())
+                        execute_command(command, cwd)
 
         except socket.error as e:
             logger.error(f"Socket error: {e}")
