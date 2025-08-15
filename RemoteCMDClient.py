@@ -1,9 +1,10 @@
+import argparse
 import socket
 import sys
-from logger import logger
-import argparse
 import threading
 import time
+
+from logger import logger
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
