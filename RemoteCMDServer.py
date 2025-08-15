@@ -2,6 +2,7 @@ import os
 import socket
 import subprocess
 import sys
+from pathlib import Path
 
 from logger import logger
 
@@ -28,7 +29,7 @@ def main():
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Reuse the socket address
     server_socket.bind((IP_ADDRESS, SERVER_PORT))
     server_socket.listen(5)
-    cwd = os.getcwd()  # Set the initial current working directory
+    cwd = Path.cwd()  # Set the initial current working directory
     logger.info(f"Listening on {IP_ADDRESS}:{SERVER_PORT}...")
 
     while True:
@@ -50,14 +51,14 @@ def main():
                         try:
                             new_dir = command[3:].strip()
                             os.chdir(new_dir)
-                            cwd = os.getcwd()  # Update the current working directory
+                            cwd = Path.cwd()  # Update the current working directory
                             logger.info(command)
                         except FileNotFoundError as e:
                             logger.error(f"Error: {e}")
                     elif len(command) > 1 and command[1] == ':': # Changing Drive
                         new_dir = command[:2].strip()
                         os.chdir(new_dir)
-                        cwd = os.getcwd()  # Update the current working directory
+                        cwd = Path.cwd()  # Update the current working directory
                         logger.info(command)
                     else:
                         # Execute the command and get the output

@@ -2,6 +2,7 @@ import argparse
 import socket
 import sys
 import threading
+from pathlib import Path
 
 from logger import logger
 
@@ -11,7 +12,7 @@ DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
 def connect_to_server(server_host_ip, server_host_port, max_retries):
     """Attempt to connect to the server and return the socket object."""
-    attempts = 0 
+    attempts = 0
     while attempts < max_retries:
         try:
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,7 +41,7 @@ def open_connection_thread(server_host_ip, server_host_port, command, max_attemp
             except socket.error as e:
                 logger.error(f"Error sending command: {e}. Reconnecting...")
                 client_socket = connect_to_server()
-                
+
             except KeyboardInterrupt:
                 logger.error("Interrupted by user. Exiting...")
                 break
@@ -48,26 +49,26 @@ def open_connection_thread(server_host_ip, server_host_port, command, max_attemp
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {e}")
                 break
-        
+
         client_socket.close()
 
 
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
-        
+
         if len(sys.argv) < 2:
             logger.info(f"Type 'RemoteCMDClient.exe -h' or 'RemoteCMDClient.exe --help' for usage.")
             return
 
     parser = argparse.ArgumentParser(description='Client for sending commands to the server.')
     parser.add_argument("host", type=str, help='Server IP address.')
-    parser.add_argument("command", type=str, help='Command to send. If command is multiple words, enclose in \"\".')
+    parser.add_argument("command", type=str, help='Command to send. If command is multiple words, enclose in " ".')
     parser.add_argument('--port', type=int, default=DEFAULT_SERVER_PORT, help=f'The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.')
     parser.add_argument('--attempts', type=int, default=DEFAULT_MAX_ATTEMPTS, help=f'The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.')
     args = parser.parse_args(args)
 
-    server_host_ip   = args.host 
+    server_host_ip   = args.host
     command          = args.command
     server_host_port = args.port
     max_attempts     = args.attempts
@@ -76,7 +77,7 @@ def main(args=None):
 
     connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts])
     connection_thread.start()
-    
+
 
 if __name__ == "__main__":
     main()
