@@ -2,7 +2,6 @@ import argparse
 import socket
 import sys
 import threading
-from pathlib import Path
 
 from logger import logger
 
@@ -32,8 +31,6 @@ def open_connection_thread(server_host_ip, server_host_port, command, max_attemp
     if client_socket:
         while True:
             try:
-                # t1 = threading.Thread(target=client_socket.send, args=[command.encode()])
-                # t1.start()
                 client_socket.send(command.encode())
                 logger.info(f"Command '{command}' sent to the server.")
                 break
