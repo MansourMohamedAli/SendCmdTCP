@@ -10,8 +10,9 @@ from logger import logger
 
 
 # Define the server address and port
-SERVER_HOST_NAME = socket.gethostname()
-IP_ADDRESS = socket.gethostbyname(SERVER_HOST_NAME)
+SERVER_HOST_NAME: str = socket.gethostname()
+# IP_ADDRESS = socket.gethostbyname(SERVER_HOST_NAME)
+IP_ADDRESS = "0.0.0.0"
 SERVER_PORT = 52000
 
 def execute_command(command, cwd):
