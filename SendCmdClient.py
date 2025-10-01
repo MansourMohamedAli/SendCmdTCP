@@ -53,7 +53,7 @@ def main(args=None):
         args = sys.argv[1:]
 
         if len(sys.argv) < 2:
-            logger.info('Type "RemoteCMDClient.exe -h" or "RemoteCMDClient.exe --help" for usage.')
+            logger.info('Type "SendCmdClient.exe -h" or "SendCmdClient.exe --help" for usage.')
             return
 
     parser = argparse.ArgumentParser(description="Client for sending commands to the server.")
