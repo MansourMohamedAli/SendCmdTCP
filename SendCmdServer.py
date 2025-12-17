@@ -66,7 +66,6 @@ def handle_client(client_socket, client_address):
                         # Execute the command and get the output
                         logger.info(f"Executing {command}")
                         execute_command(command, cwd)
-                        time.sleep(1)
         except OSError as e:
             logger.error(f"Socket error: {e}")
             sys.exit()
