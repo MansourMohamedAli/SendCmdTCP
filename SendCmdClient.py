@@ -41,7 +41,7 @@ async def main(args=None):
     requested_host   = args.host
     command          = args.command
 
-    tasks = [asyncio.create_task(tcp_echo_client(requested_host, i, command)) for i in range(52000, 52003)]
+    tasks = [asyncio.create_task(tcp_echo_client(requested_host, i, command)) for i in range(52000, 52001)]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     print(f"Task Results: {results}")
 
