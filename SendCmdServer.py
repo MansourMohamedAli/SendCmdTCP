@@ -1,92 +1,50 @@
-import os
-import socket
-import subprocess
+import argparse
+import asyncio
 import sys
-import threading
-import time
-from pathlib import Path
 
 from logger import logger
 
-# TODO handle backslash character
-
-
-# Define the server address and port
-SERVER_HOST_NAME: str = socket.gethostname()
-# IP_ADDRESS = socket.gethostbyname(SERVER_HOST_NAME)
 IP_ADDRESS = "0.0.0.0"
-SERVER_PORT = 52000
+DEFAULT_SERVER_PORT = 52000
+DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
-def execute_command(command, cwd):
-    """Execute a shell command and return its output."""
-    try:
-        result = subprocess.run(command, text=True, shell=True, cwd=cwd)
-    except subprocess.CalledProcessError as e:
-        return f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}'
-    else:
-        return result.stdout
+async def handle_echo(reader, writer):
+    data = await reader.read(100)
+    message = data.decode()
+    addr = writer.get_extra_info('peername')
 
-def handle_client(client_socket, client_address):
-    logger.info(f"Accepted connection from {client_address}")
-    cwd = Path.cwd()  # Set the initial current working directory
-    while True:
-        try:
-            full_command = client_socket.recv(4096).decode()
-            if ";" in full_command:
-                full_command = full_command.split(";")
-            else:
-                full_command = [full_command]
-            for command in full_command:
-                if command:
-                    if command.lower() == "exit":
-                        logger.info("Exiting...")
-                        os._exit(0)
-                    # Check if the command is a "cd" command
-                    if command.startswith("cd "):
-                        try:
-                            new_dir = command[3:].strip()
-                            os.chdir(new_dir)
-                            cwd = Path.cwd()  # Update the current working directory
-                            logger.info(command)
-                        except FileNotFoundError as e:
-                            logger.error(f"Error: {e}")
-                    elif len(command) > 1 and command[1] == ":": # Changing Drive
-                        new_dir = command[:2].strip()
-                        os.chdir(new_dir)
-                        cwd = Path.cwd()  # Update the current working directory
-                        logger.info(command)
-                    elif command.startswith("set "):
-                        try:
-                            set_cmd = command[4:].strip().split("=")
-                            os.environ[set_cmd[0]] = set_cmd[1]
-                            logger.info(command)
-                        except FileNotFoundError as e:
-                            logger.error(f"Error: {e}")
-                    else:
-                        # Execute the command and get the output
-                        logger.info(f"Executing {command}")
-                        execute_command(command, cwd)
-        except OSError as e:
-            logger.error(f"Socket error: {e}")
-            sys.exit()
+    print(f"Received {message!r} from {addr!r}")
 
-def main():
-    # Create a socket object
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Reuse the socket address
-    server_socket.bind((IP_ADDRESS, SERVER_PORT))
-    server_socket.listen(5)
-    Path.cwd()  # Set the initial current working directory
-    logger.info(f"Listening on {IP_ADDRESS}:{SERVER_PORT}...")
+    print(f"Send: {message!r}")
+    writer.write(data)
+    await writer.drain()
 
-    while True:
-        try:
-            client_socket, client_address = server_socket.accept()
-            client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-            client_thread.start()
+    print("Close the connection")
+    writer.close()
+    await writer.wait_closed()
 
-        except OSError as e:
-            logger.error(f"Socket error: {e}")
+async def main(args=None) -> None:
+    if args is None:
+        args = sys.argv[1:]
 
-if __name__ == "__main__":
-    main()
+        if len(sys.argv) < 1:
+            logger.info('Type "SendCmdClient.exe -h" or "SendCmdClient.exe --help" for usage.')
+            # print('Type "SendCmdClient.exe -h" or "SendCmdClient.exe --help" for usage.')
+            return
+
+    parser = argparse.ArgumentParser(description="Server for receiving commands from the client.")
+    parser.add_argument("--port", type=int, default=DEFAULT_SERVER_PORT, help=f"The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.")
+    args = parser.parse_args(args)
+
+    port = args.port
+
+    server = await asyncio.start_server(
+        handle_echo, IP_ADDRESS, port)
+
+    addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
+    print(f'Serving on {addrs}')
+
+    async with server:
+        await server.serve_forever()
+
+asyncio.run(main())

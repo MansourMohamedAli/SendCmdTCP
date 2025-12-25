@@ -1,54 +1,29 @@
 import argparse
-import socket
+import asyncio
 import sys
-import threading
 
 from logger import logger
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
+async def tcp_echo_client(host, port, message):
+    reader, writer = await asyncio.open_connection(
+        host, port)
 
-def connect_to_server(server_host_ip, server_host_port, max_retries) -> socket.socket | None:
-    """Attempt to connect to the server and return the socket object."""
-    attempts = 0
-    while attempts < max_retries:
-        try:
-            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket.connect((server_host_ip, server_host_port))
-        except OSError as e:
-            attempts += 1
-            logger.error(f"Connection attempt {attempts}/{max_retries} failed: {e}. Retrying...")
-        else:
-            logger.info("Connected to server")
-            return client_socket
+    print(f'Send: {message!r}')
+    writer.write(message.encode())
+    await writer.drain()
 
-    logger.critical(f"Could not connect to server after {max_retries} attempt(s)... Exiting")
-    return None
+    # data = await reader.read(100)
+    # print(f'Received: {data.decode()!r}')
 
+    print('Close the connection')
+    writer.close()
+    await writer.wait_closed()
+    return f"Send Command {message}"
 
-def open_connection_thread(server_host_ip, server_host_port, command, max_attempts) -> None:
-    """New thread is created to not block code execution of GUIs that use this application."""
-    client_socket = connect_to_server(server_host_ip, server_host_port, max_attempts)
-    if client_socket:
-        while True:
-            try:
-                client_socket.send(command.encode())
-                logger.info(f'Command "{command}" sent to the server.')
-                break
-
-            except OSError as e:
-                logger.error(f"Error sending command: {e}. Reconnecting...")
-                client_socket = connect_to_server()
-
-            except KeyboardInterrupt:
-                logger.error("Interrupted by user. Exiting...")
-                break
-
-        client_socket.close()
-
-
-def main(args=None):
+async def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
@@ -59,20 +34,17 @@ def main(args=None):
     parser = argparse.ArgumentParser(description="Client for sending commands to the server.")
     parser.add_argument("host", type=str, help="Server IP address.")
     parser.add_argument("command", type=str, help='Command to send. If command is multiple words, enclose in " ".')
-    parser.add_argument("--port", type=int, default=DEFAULT_SERVER_PORT, help=f"The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.")
+    # parser.add_argument("--port", type=int, default=DEFAULT_SERVER_PORT, help=f"The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.")
     parser.add_argument("--attempts", type=int, default=DEFAULT_MAX_ATTEMPTS, help=f"The maximum number of connection attempts. Default is {DEFAULT_MAX_ATTEMPTS}.")
     args = parser.parse_args(args)
 
-    server_host_ip   = args.host
+    requested_host   = args.host
     command          = args.command
-    server_host_port = args.port
-    max_attempts     = args.attempts
 
-    server_host_ip = socket.gethostbyname(server_host_ip)
-
-    connection_thread = threading.Thread(target=open_connection_thread, args=[server_host_ip, server_host_port, command, max_attempts])
-    connection_thread.start()
+    tasks = [asyncio.create_task(tcp_echo_client(requested_host, i, command)) for i in range(52000, 52003)]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    print(f"Task Results: {results}")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
