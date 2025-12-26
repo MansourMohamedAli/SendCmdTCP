@@ -1,0 +1,19 @@
+{
+  "hosts": [
+    {
+      "hostname": "127.0.0.1",
+      "port": 52000,
+      "command": "cd"
+    },
+    {
+      "hostname": "127.0.0.1",
+      "port": 52001,
+      "command": "cd"
+    },
+    {
+      "hostname": "127.0.0.1",
+      "port": 52002,
+      "command": "cd"
+    }
+  ]
+}
