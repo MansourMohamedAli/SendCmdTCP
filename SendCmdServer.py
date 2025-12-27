@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import json
 import sys
 
 from logger import logger
@@ -24,13 +25,15 @@ async def execute_command(cmd):
 
     return proc.returncode, stdout.decode(), stderr.decode()
 
+
 async def handle_client(reader, writer):
     data = await reader.read(100)
-    message = data.decode()
+    commands = json.loads(data.decode("utf-8"))
     addr = writer.get_extra_info('peername')
-    task = asyncio.create_task(execute_command(cmd=message))
-    result = await task
-    print(f"Received {message!r} from {addr!r}. Result of Execution {result}")
+    tasks = [asyncio.create_task(execute_command(cmd=command)) for command in commands]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    print(f"Received {commands!r} from {addr!r}. Result of Execution {results}")
+
 
 async def main(args=None) -> None:
     if args is None:

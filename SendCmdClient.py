@@ -3,7 +3,7 @@ import asyncio
 import sys
 
 from logger import logger
-from read_config import read_config
+from read_config import read_config, serialize_commands
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
@@ -11,9 +11,12 @@ DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 async def tcp_echo_client(host, port, message):
     reader, writer = await asyncio.open_connection(
         host, port)
-
-    print(f'Send: {message!r}')
-    writer.write(message.encode())
+    
+    encoded_message = serialize_commands(message)
+    
+    print(f'Send: {encoded_message!r}')
+    # for m in message:
+    writer.write(encoded_message)
     await writer.drain()
 
     # data = await reader.read(100)
@@ -43,7 +46,7 @@ def load_single_host(hostname: str, port: int, command: str) -> list:
     return [{
         "hostname": hostname,
         "port": port,
-        "command": command
+        "command": [command]
     }]
 
 async def main(args=None):
@@ -66,6 +69,7 @@ async def main(args=None):
 
     except Exception as e:
         sys.exit(f"Error: {e}")
+        
 
     tasks = [asyncio.create_task(tcp_echo_client(host["hostname"], host["port"], host["command"])) for host in config_data]
     results = await asyncio.gather(*tasks, return_exceptions=True)

@@ -25,6 +25,10 @@ def read_config(json_path: str) -> list:
 
     return data["hosts"]
 
+def serialize_commands(commands:list):
+    return json.dumps(commands).encode("utf-8")
+
+
 
 def main():
     if len(sys.argv) != 2:
