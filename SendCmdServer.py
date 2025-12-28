@@ -50,11 +50,10 @@ def execute_command_sequential(commands_json):
 
 
 def execute_command(cmd, cwd) -> tuple[int, str, str]:
-    print(f"Executing {cmd}")
     # result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     result = subprocess.run(cmd, shell=True, text=True, cwd=cwd)
 
-    print(f"[{cmd!r} exited with {result.returncode}]")
+    logger.info(f"[{cmd!r} exited with {result.returncode}]")
 
     #################################################################################
     # Since no longer capturing output, stdout and stderr are null. Going
@@ -78,7 +77,7 @@ async def handle_client(reader, writer):
     commands_list = json.loads(data.decode("utf-8"))
     addr = writer.get_extra_info("peername")
     executor = ThreadPoolExecutor(max_workers=1)
-    print(f"Command from {addr}")
+    logger.debug(f"Command from {addr}")
     executor.submit(execute_command_sequential, commands_list)
 
 
@@ -108,7 +107,7 @@ async def main(args=None) -> None:
     server = await asyncio.start_server(handle_client, IP_ADDRESS, port)
 
     addrs = ", ".join(str(sock.getsockname()) for sock in server.sockets)
-    print(f"Serving on {addrs}")
+    logger.info(f"Serving on {addrs}")
 
     async with server:
         await server.serve_forever()
