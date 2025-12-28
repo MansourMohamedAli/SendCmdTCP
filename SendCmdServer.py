@@ -28,12 +28,20 @@ def execute_command(cmd) -> tuple[int, str, str]:
     result = subprocess.run(cmd, shell=True, text=True)
 
     print(f"[{cmd!r} exited with {result.returncode}]")
-    if result.stdout:
-        print(f"[stdout]\n{result.stdout}")
-    if result.stderr:
-        print(f"[stderr]\n{result.stderr}")
 
+    #################################################################################
+    # Since no longer capturing output, stdout and stderr are null. Going
+    # to leave this here juset in case output capture is needed in the future.
+    # Capturing output will pause command execution as the server will wait for
+    # the process to end before moving on to the next. For example: notepad will
+    # only return an output after it is closed even with using "start".
+
+    # if result.stdout:
+    #     print(f"[stdout]\n{result.stdout}")
+    # if result.stderr:
+    #     print(f"[stderr]\n{result.stderr}")
     # return result.returncode, result.stdout, result.stderr
+    #################################################################################
     return result.returncode
 
 
