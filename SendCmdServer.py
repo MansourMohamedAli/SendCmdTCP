@@ -29,7 +29,7 @@ async def execute_command(cmd):
 
 
 async def handle_client(reader, writer):
-    data = await reader.read(100)
+    data = await reader.read(4096)
     commands = json.loads(data.decode("utf-8"))
     addr = writer.get_extra_info("peername")
     tasks = [asyncio.create_task(execute_command(cmd=command)) for command in commands]
