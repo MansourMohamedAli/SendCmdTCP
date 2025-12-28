@@ -24,8 +24,8 @@ def execute_command(cmd) -> tuple[int, str, str]:
         set_cmd = cmd[4:].strip().split("=")
         os.environ[set_cmd[0]] = set_cmd[1]
 
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    # result = subprocess.run(cmd, shell=True, text=True)
+    # result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    result = subprocess.run(cmd, shell=True, text=True)
 
     print(f"[{cmd!r} exited with {result.returncode}]")
     if result.stdout:
