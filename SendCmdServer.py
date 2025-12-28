@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import os
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -12,13 +13,23 @@ DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
 
+def execute_command_sequential(commands):
+    for cmd in commands:
+        execute_command(cmd)
+
+
 def execute_command(cmd) -> tuple[int, str, str]:
     print(f"Executing {cmd}")
+    if cmd.startswith("set "):
+        set_cmd = cmd[4:].strip().split("=")
+        os.environ[set_cmd[0]] = set_cmd[1]
+
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    # result = subprocess.run(cmd, shell=True, text=True)
 
     print(f"[{cmd!r} exited with {result.returncode}]")
     if result.stdout:
-        print(f"[Output]\n{result.stdout}")
+        print(f"[stdout]\n{result.stdout}")
     if result.stderr:
         print(f"[stderr]\n{result.stderr}")
 
@@ -32,9 +43,7 @@ async def handle_client(reader, writer):
     addr = writer.get_extra_info("peername")
     executor = ThreadPoolExecutor(max_workers=1)
     print(f"Command from {addr}")
-    results = executor.map(execute_command, commands)
-    # for i, result in enumerate(results):
-    #     print(f"Result({i}): {result}")
+    executor.submit(execute_command_sequential, commands)
 
 
 async def main(args=None) -> None:
