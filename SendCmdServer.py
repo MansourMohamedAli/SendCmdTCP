@@ -4,7 +4,6 @@ import json
 import os
 import subprocess
 import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from logger import logger
@@ -14,7 +13,7 @@ DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
 
-def execute_command_sequential(commands_json):
+def execute_command_sequential(commands_json, cwd):
     for command in commands_json:
         cmds = command.split(";") if ";" in command else [command]
         for cmd in cmds:
@@ -52,7 +51,6 @@ def execute_command_sequential(commands_json):
 def execute_command(cmd, cwd) -> tuple[int, str, str]:
     # result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     result = subprocess.run(cmd, shell=True, text=True, cwd=cwd)
-
     logger.info(f"[{cmd!r} exited with {result.returncode}]")
 
     #################################################################################
@@ -76,9 +74,12 @@ async def handle_client(reader, writer):
     data = await reader.read(4096)
     commands_list = json.loads(data.decode("utf-8"))
     addr = writer.get_extra_info("peername")
-    executor = ThreadPoolExecutor(max_workers=1)
     logger.debug(f"Command from {addr}")
-    executor.submit(execute_command_sequential, commands_list)
+    cwd = Path.cwd()
+    task1 = asyncio.create_task(
+        asyncio.to_thread(execute_command_sequential, commands_list, cwd),
+    )
+    await task1
 
 
 async def main(args=None) -> None:
