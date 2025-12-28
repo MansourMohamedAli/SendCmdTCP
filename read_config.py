@@ -8,7 +8,8 @@ def read_config(json_path: str) -> list:
     path = Path(json_path)
 
     if not path.is_file():
-        raise FileNotFoundError(f"JSON file not found: {json_path}")
+        msg = f"JSON file not found: {json_path!r}"
+        raise FileNotFoundError(msg)
 
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
@@ -21,13 +22,14 @@ def read_config(json_path: str) -> list:
     for idx, host in enumerate(data["hosts"], start=1):
         missing = required_keys - host.keys()
         if missing:
-            raise ValueError(f"Host #{idx} is missing keys: {missing}")
+            msg = f"Host #{idx!r} is missing keys: {missing!r}"
+            raise ValueError(msg)
 
     return data["hosts"]
 
-def serialize_commands(commands:list):
-    return json.dumps(commands).encode("utf-8")
 
+def serialize_commands(commands: list):
+    return json.dumps(commands).encode("utf-8")
 
 
 def main():
