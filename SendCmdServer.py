@@ -1,7 +1,9 @@
 import argparse
 import asyncio
 import json
+import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 from logger import logger
 
@@ -10,31 +12,29 @@ DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
 
-async def execute_command(cmd):
-    proc = await asyncio.create_subprocess_shell(
-        cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
+def execute_command(cmd) -> tuple[int, str, str]:
+    print(f"Executing {cmd}")
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
-    stdout, stderr = await proc.communicate()
+    print(f"[{cmd!r} exited with {result.returncode}]")
+    if result.stdout:
+        print(f"[Output]\n{result.stdout}")
+    if result.stderr:
+        print(f"[stderr]\n{result.stderr}")
 
-    print(f"[{cmd!r} exited with {proc.returncode}]")
-    if stdout:
-        print(f"[stdout]\n{stdout.decode()}")
-    if stderr:
-        print(f"[stderr]\n{stderr.decode()}")
-
-    return proc.returncode, stdout.decode(), stderr.decode()
+    # return result.returncode, result.stdout, result.stderr
+    return result.returncode
 
 
 async def handle_client(reader, writer):
     data = await reader.read(4096)
     commands = json.loads(data.decode("utf-8"))
     addr = writer.get_extra_info("peername")
-    tasks = [asyncio.create_task(execute_command(cmd=command)) for command in commands]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    print(f"Received {commands!r} from {addr!r}. Result of Execution {results}")
+    executor = ThreadPoolExecutor(max_workers=1)
+    print(f"Command from {addr}")
+    results = executor.map(execute_command, commands)
+    # for i, result in enumerate(results):
+    #     print(f"Result({i}): {result}")
 
 
 async def main(args=None) -> None:

@@ -3,8 +3,10 @@
     {
       "hostname": "127.0.0.1",
       "port": 52000,
-      "command": ["echo Command 1",
+      "command": ["timeout 2",
+                  "echo command 2",
                   "ipconfig",
+                  "timeout 1",
                   "echo Command 3"
                   
                 ]
