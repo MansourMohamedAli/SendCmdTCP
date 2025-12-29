@@ -91,6 +91,16 @@ async def handle_client(reader, writer):
     )
     result = await task1
     print(result)
+    return_message = json.dumps(result)
+
+    # if any(result):
+    #     return_message = json.dumps(result)
+    # else:
+    #     return_message = "All commands executed with no errors"
+
+    # writer.write(return_message.encode("utf-8"))
+
+    writer.write(return_message.encode("utf-8"))
 
 
 async def main(args=None) -> None:

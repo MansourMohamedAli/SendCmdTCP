@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import json
 import sys
 
 from logger import logger
@@ -10,21 +11,44 @@ DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
 
 async def tcp_echo_client(host, port, message):
-    reader, writer = await asyncio.open_connection(host, port)
+    try:
+        reader, writer = await asyncio.open_connection(host, port)
+        encoded_message = serialize_commands(message)
 
-    encoded_message = serialize_commands(message)
+        print(f"Send: {encoded_message!r}")
+        writer.write(encoded_message)
+        await writer.drain()
 
-    print(f"Send: {encoded_message!r}")
-    writer.write(encoded_message)
-    await writer.drain()
+        data = await reader.read(4096)
+        result = json.loads(data.decode("utf-8"))
+        # print(f"Received: {data.decode()!r}")
+        print(f"Received: {result}")
 
-    # data = await reader.read(100)
-    # print(f'Received: {data.decode()!r}')
+        if not any(result):
+            logger.info(f"All commands sent to {host} and executed with no errors")
+        else:
+            logger.info(f"{host}:Error Occured")
 
-    print("Close the connection")
-    writer.close()
-    await writer.wait_closed()
-    return f"Send Command {message}"
+        print("Close the connection")
+        writer.close()
+        await writer.wait_closed()
+        # return f"Send Command {message}"
+
+    except ConnectionRefusedError as e:
+        logger.info(f"Connection refused by {host}:{port}. Is the server running?")
+        return e
+    except TimeoutError as e:
+        logger.info(f"Timeout connecting to {host}:{port}")
+        return e
+    except OSError as e:
+        logger.info(f"OS error occurred: {e}")
+        return e
+    except Exception as e:
+        logger.info(f"An unexpected error occurred: {e}")
+        return e
+
+    else:
+        return result
 
 
 def parse_args():
