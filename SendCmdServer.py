@@ -14,6 +14,7 @@ DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
 
 def execute_command_sequential(commands_json, cwd):
+    return_codes = []
     for command in commands_json:
         cmds = command.split(";") if ";" in command else [command]
         for cmd in cmds:
@@ -28,8 +29,9 @@ def execute_command_sequential(commands_json, cwd):
                         os.chdir(new_dir)
                         cwd = Path.cwd()  # Update the current working directory
                         logger.info(cmd)
-                    except FileNotFoundError as e:
+                    except (FileNotFoundError, OSError) as e:
                         logger.error(f"Error: {e}")
+                        return_codes.append(e.winerror)
                 elif len(cmd) > 1 and cmd[1] == ":":  # Changing Drive
                     new_dir = cmd[:2].strip()
                     os.chdir(new_dir)
@@ -40,19 +42,27 @@ def execute_command_sequential(commands_json, cwd):
                         set_cmd = cmd[4:].strip().split("=")
                         os.environ[set_cmd[0]] = set_cmd[1]
                         logger.info(cmd)
-                    except FileNotFoundError as e:
+                    except (FileNotFoundError, OSError) as e:
                         logger.error(f"Error: {e}")
+                        return_codes.append(e.winerror)
                 else:
                     # Execute the command and get the output
                     logger.info(f"Executing {cmd}")
-                    execute_command(cmd, cwd)
+                    result = execute_command(cmd, cwd)
+                    return_codes.append(result)
+    return return_codes
 
 
-def execute_command(cmd, cwd) -> tuple[int, str, str]:
-    # result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    result = subprocess.run(cmd, shell=True, text=True, cwd=cwd)
-    logger.info(f"[{cmd!r} exited with {result.returncode}]")
-
+def execute_command(cmd, cwd) -> None | int:
+    try:
+        result = subprocess.run(cmd, shell=True, text=True, cwd=cwd, check=True)
+        logger.info(f"[{cmd!r} exited with {result.returncode}]")
+    except subprocess.CalledProcessError as e:
+        logger.error(
+            f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
+        )
+        return e.returncode
+    # else:
     #################################################################################
     # Since no longer capturing output, stdout and stderr are null. Going
     # to leave this here juset in case output capture is needed in the future.
@@ -67,7 +77,7 @@ def execute_command(cmd, cwd) -> tuple[int, str, str]:
     # return result.returncode, result.stdout, result.stderr
     #################################################################################
 
-    return result.returncode
+    # return result.returncode
 
 
 async def handle_client(reader, writer):
@@ -79,7 +89,8 @@ async def handle_client(reader, writer):
     task1 = asyncio.create_task(
         asyncio.to_thread(execute_command_sequential, commands_list, cwd),
     )
-    await task1
+    result = await task1
+    print(result)
 
 
 async def main(args=None) -> None:
@@ -118,4 +129,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nShutting down...")
+        print("Shutting down...")
