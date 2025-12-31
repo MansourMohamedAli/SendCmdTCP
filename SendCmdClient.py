@@ -1,38 +1,46 @@
 import argparse
 import asyncio
 import json
+import pickle
+import struct
 import sys
+import time
 
 from logger import logger
 from read_config import read_config, serialize_commands
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
+HEADER_FMT = "!I"  # 4-byte unsigned int
+HEADER_SIZE = struct.calcsize(HEADER_FMT)
 
 
-async def tcp_echo_client(host, port, message):
+async def recv_pickle(reader: asyncio.StreamReader):
+    header = await reader.readexactly(HEADER_SIZE)
+    (length,) = struct.unpack(HEADER_FMT, header)
+    payload = await reader.readexactly(length)
+    return pickle.loads(payload)
+
+
+async def tcp_echo_client(host, port, message, error_dict):
     try:
         reader, writer = await asyncio.open_connection(host, port)
-        encoded_message = serialize_commands(message)
+        print(f"Sending commands: {message} to {host}:{port}")
 
-        print(f"Send: {encoded_message!r}")
+        encoded_message = serialize_commands(message)
         writer.write(encoded_message)
         await writer.drain()
 
-        data = await reader.read(4096)
-        result = json.loads(data.decode("utf-8"))
-        # print(f"Received: {data.decode()!r}")
-        print(f"Received: {result}")
+        results = await recv_pickle(reader)
 
-        if not any(result):
-            logger.info(f"All commands sent to {host} and executed with no errors")
-        else:
-            logger.info(f"{host}:Error Occured")
-
-        print("Close the connection")
+        if any(results):
+            for index, result in enumerate(results):
+                if result:
+                    error_dict[f"{host}{port} Command:[{message[index]}]"] = (
+                        f'Resulted in "{result}".'
+                    )
         writer.close()
         await writer.wait_closed()
-        # return f"Send Command {message}"
 
     except ConnectionRefusedError as e:
         logger.info(f"Connection refused by {host}:{port}. Is the server running?")
@@ -46,9 +54,8 @@ async def tcp_echo_client(host, port, message):
     except Exception as e:
         logger.info(f"An unexpected error occurred: {e}")
         return e
-
     else:
-        return result
+        return results
 
 
 def parse_args():
@@ -104,14 +111,28 @@ async def main(args=None):
     except Exception as e:
         sys.exit(f"Error: {e}")
 
+    error_dict = {}
     tasks = [
         asyncio.create_task(
-            tcp_echo_client(host["hostname"], host["port"], host["command"]),
+            tcp_echo_client(
+                host["hostname"],
+                host["port"],
+                host["command"],
+                error_dict,
+            ),
         )
         for host in config_data
     ]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    print(f"Task Results: {results}")
+    t1 = time.perf_counter()
+    await asyncio.gather(*tasks, return_exceptions=True)
+    t2 = time.perf_counter()
+
+    if error_dict:
+        print(json.dumps(error_dict, indent=4, sort_keys=True))
+    else:
+        print("All commands sent to all hosts and executed with no errors")
+
+    print(f"Finished in {t2 - t1:.2f} seconds")
 
 
 if __name__ == "__main__":

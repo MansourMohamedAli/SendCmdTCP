@@ -2,6 +2,8 @@ import argparse
 import asyncio
 import json
 import os
+import pickle
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -11,6 +13,16 @@ from logger import logger
 IP_ADDRESS = "0.0.0.0"
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
+
+HEADER_FMT = "!I"  # 4-byte unsigned int
+HEADER_SIZE = struct.calcsize(HEADER_FMT)
+
+
+async def send_pickle(writer: asyncio.StreamWriter, obj):
+    payload = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+    header = struct.pack(HEADER_FMT, len(payload))
+    writer.write(header + payload)
+    await writer.drain()
 
 
 def execute_command_sequential(commands_json, cwd):
@@ -31,7 +43,7 @@ def execute_command_sequential(commands_json, cwd):
                         logger.info(cmd)
                     except (FileNotFoundError, OSError) as e:
                         logger.error(f"Error: {e}")
-                        return_codes.append(e.winerror)
+                        return_codes.append(e)
                 elif len(cmd) > 1 and cmd[1] == ":":  # Changing Drive
                     new_dir = cmd[:2].strip()
                     os.chdir(new_dir)
@@ -44,7 +56,7 @@ def execute_command_sequential(commands_json, cwd):
                         logger.info(cmd)
                     except (FileNotFoundError, OSError) as e:
                         logger.error(f"Error: {e}")
-                        return_codes.append(e.winerror)
+                        return_codes.append(e)
                 else:
                     # Execute the command and get the output
                     logger.info(f"Executing {cmd}")
@@ -56,12 +68,12 @@ def execute_command_sequential(commands_json, cwd):
 def execute_command(cmd, cwd) -> None | int:
     try:
         result = subprocess.run(cmd, shell=True, text=True, cwd=cwd, check=True)
-        logger.info(f"[{cmd!r} exited with {result.returncode}]")
+        # logger.info(f"[{cmd!r} exited with {result.returncode}]")
     except subprocess.CalledProcessError as e:
         logger.error(
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
         )
-        return e.returncode
+        return e
     # else:
     #################################################################################
     # Since no longer capturing output, stdout and stderr are null. Going
@@ -89,18 +101,10 @@ async def handle_client(reader, writer):
     task1 = asyncio.create_task(
         asyncio.to_thread(execute_command_sequential, commands_list, cwd),
     )
-    result = await task1
-    print(result)
-    return_message = json.dumps(result)
+    results = await task1
 
-    # if any(result):
-    #     return_message = json.dumps(result)
-    # else:
-    #     return_message = "All commands executed with no errors"
-
-    # writer.write(return_message.encode("utf-8"))
-
-    writer.write(return_message.encode("utf-8"))
+    task2 = asyncio.create_task(send_pickle(writer, results))
+    await task2
 
 
 async def main(args=None) -> None:
