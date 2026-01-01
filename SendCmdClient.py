@@ -36,7 +36,7 @@ async def tcp_echo_client(host, port, message, error_dict):
         if any(results):
             for index, result in enumerate(results):
                 if result:
-                    error_dict[f"{host}{port} Command:[{message[index]}]"] = (
+                    error_dict[f"{host}:{port} Command:[{message[index]}]"] = (
                         f'Resulted in "{result}".'
                     )
         writer.close()
@@ -70,6 +70,7 @@ def parse_args():
         help='Command to send. If command is multiple words, enclose in " ".',
     )
     parser.add_argument(
+        "-p",
         "--port",
         nargs="?",
         type=int,
@@ -77,9 +78,15 @@ def parse_args():
         help=f"The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.",
     )
     parser.add_argument(
-        "--config",
+        "-f",
+        "--configfile",
+        default="sendcmdconfig.json",
         help="JSON config file with multiple hosts",
-        # default="config.json"
+    )
+    parser.add_argument(
+        "-c",
+        "--commandset",
+        help="command set",
     )
     return parser.parse_args()
 
@@ -97,14 +104,14 @@ async def main(args=None):
     args = parse_args()
 
     try:
-        if args.config:
+        if args.commandset:
             # CONFIG MODE: ignore positionals
-            config_data = read_config(args.config)
+            config_data = read_config(args.configfile, args.commandset)
         else:
             # SINGLE HOST MODE : positionals required
             if not all([args.hostname, args.port, args.command]):
                 sys.exit(
-                    "Error: hostname, and command are required unless --config is specified",
+                    "Error: hostname, and command are required unless --commandset is specified",
                 )
             config_data = load_single_host(args.hostname, args.port, args.command)
 

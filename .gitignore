@@ -6,4 +6,4 @@
 *.bak
 
 # Configuration file
-config.json
+sendcmdconfig.json

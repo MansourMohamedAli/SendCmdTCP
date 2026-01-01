@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-def read_config(json_path: str) -> list:
+def read_config(json_path: str, command_set: str) -> list:
     """Read and validate hosts from a JSON file."""
     path = Path(json_path)
 
@@ -14,18 +14,18 @@ def read_config(json_path: str) -> list:
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
-    if "hosts" not in data or not isinstance(data["hosts"], list):
-        raise ValueError("JSON must contain a 'hosts' list")
+    if command_set not in data or not isinstance(data[command_set], list):
+        raise ValueError(f"{command_set} not found in {json_path}")
 
     required_keys = {"hostname", "port", "command"}
 
-    for idx, host in enumerate(data["hosts"], start=1):
+    for idx, host in enumerate(data[command_set], start=1):
         missing = required_keys - host.keys()
         if missing:
             msg = f"Host #{idx!r} is missing keys: {missing!r}"
             raise ValueError(msg)
 
-    return data["hosts"]
+    return data[command_set]
 
 
 def serialize_commands(commands: list):
