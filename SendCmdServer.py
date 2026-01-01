@@ -13,6 +13,7 @@ from logger import logger
 IP_ADDRESS = "0.0.0.0"
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
+PROCESS_NOT_FOUND_CODE = 128
 
 HEADER_FMT = "!I"  # 4-byte unsigned int
 HEADER_SIZE = struct.calcsize(HEADER_FMT)
@@ -70,6 +71,8 @@ def execute_command(cmd, cwd) -> None | int:
         result = subprocess.run(cmd, shell=True, text=True, cwd=cwd, check=True)
         # logger.info(f"[{cmd!r} exited with {result.returncode}]")
     except subprocess.CalledProcessError as e:
+        if cmd.startswith("taskkill ") and e.returncode == PROCESS_NOT_FOUND_CODE:
+            return None
         logger.error(
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
         )
