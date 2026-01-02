@@ -3,7 +3,7 @@
     {
       "hostname": "127.0.0.1",
       "port": 52000,
-      "command": [
+      "commands": [
                   "echo load 1",
                   "echo load 2",
                   "echo load 3"
@@ -12,19 +12,19 @@
     {
       "hostname": "127.0.0.1",
       "port": 52001,
-      "command": ["echo load 1","echo load 2"]
+      "commands": ["echo load 1","echo load 2"]
     },
     {
       "hostname": "127.0.0.1",
       "port": 52002,
-      "command": ["echo load 1"]
+      "commands": ["echo load 1"]
     }
   ],
   "unload": [
     {
       "hostname": "127.0.0.1",
       "port": 52000,
-      "command": [
+      "commands": [
                   "echo unload 1",
                   "echo unload 2",
                   "echo unload 3"
@@ -33,12 +33,12 @@
     {
       "hostname": "127.0.0.1",
       "port": 52001,
-      "command": ["echo unload 1","echo unload 2"]
+      "commands": ["echo unload 1","echo unload 2"]
     },
     {
       "hostname": "127.0.0.1",
       "port": 52002,
-      "command": ["echo unload 1"]
+      "commands": ["echo unload 1"]
     }
   ]
 }

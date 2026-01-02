@@ -22,7 +22,7 @@ async def recv_pickle(reader: asyncio.StreamReader):
     return pickle.loads(payload)
 
 
-async def tcp_echo_client(host, port, message, error_dict):
+async def send_command_tcp(host, port, message):
     try:
         reader, writer = await asyncio.open_connection(host, port)
         print(f"Sending commands: {message} to {host}:{port}")
@@ -33,12 +33,6 @@ async def tcp_echo_client(host, port, message, error_dict):
 
         results = await recv_pickle(reader)
 
-        if any(results):
-            for index, result in enumerate(results):
-                if result:
-                    error_dict[f"{host}:{port} Command:[{message[index]}]"] = (
-                        f'Resulted in "{result}".'
-                    )
         writer.close()
         await writer.wait_closed()
 
@@ -92,7 +86,9 @@ def parse_args():
 
 
 def load_single_host(hostname: str, port: int, command: str) -> list:
-    return [{"hostname": hostname, "port": port, "command": [command]}]
+    command = command.split(";")
+    print(command)
+    return [{"hostname": hostname, "port": port, "commands": command}]
 
 
 async def main(args=None):
@@ -118,26 +114,31 @@ async def main(args=None):
     except Exception as e:
         sys.exit(f"Error: {e}")
 
-    error_dict = {}
     tasks = [
         asyncio.create_task(
-            tcp_echo_client(
+            send_command_tcp(
                 host["hostname"],
                 host["port"],
-                host["command"],
-                error_dict,
+                host["commands"],
             ),
         )
         for host in config_data
     ]
     t1 = time.perf_counter()
-    await asyncio.gather(*tasks, return_exceptions=True)
+    results_list = await asyncio.gather(*tasks, return_exceptions=True)
     t2 = time.perf_counter()
 
-    if error_dict:
-        print(json.dumps(error_dict, indent=4, sort_keys=True))
-    else:
-        print("All commands sent to all hosts and executed with no errors")
+    for host, results in zip(config_data, results_list, strict=True):
+        if isinstance(results, Exception):
+            logger.info(
+                f"Could not send any command to [{host['hostname']}:{host['port']}]. Return message: [{results}]",
+            )
+        else:
+            for command, result in zip(host["commands"], results, strict=True):
+                if result:
+                    logger.info(
+                        f'"{command}" sent to [{host["hostname"]}:{host["port"]}] failed. Return message: [{result}]',
+                    )
 
     print(f"Finished in {t2 - t1:.2f} seconds")
 

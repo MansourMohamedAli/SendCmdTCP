@@ -26,43 +26,43 @@ async def send_pickle(writer: asyncio.StreamWriter, obj):
     await writer.drain()
 
 
-def execute_command_sequential(commands_json, cwd):
+def execute_command_sequential(commands, cwd):
     return_codes = []
-    for command in commands_json:
-        cmds = command.split(";") if ";" in command else [command]
-        for cmd in cmds:
-            if cmd:
-                if cmd.lower() == "exit":
-                    logger.info("Exiting...")
-                    os._exit(0)
-                # Check if the command is a "cd" command
-                if cmd.startswith("cd "):
-                    try:
-                        new_dir = cmd[3:].strip()
-                        os.chdir(new_dir)
-                        cwd = Path.cwd()  # Update the current working directory
-                        logger.info(cmd)
-                    except (FileNotFoundError, OSError) as e:
-                        logger.error(f"Error: {e}")
-                        return_codes.append(e)
-                elif len(cmd) > 1 and cmd[1] == ":":  # Changing Drive
-                    new_dir = cmd[:2].strip()
+    for command in commands:
+        if command:
+            if command.lower() == "exit":
+                logger.info("Exiting...")
+                os._exit(0)
+            # Check if the command is a "cd" command
+            if command.startswith("cd "):
+                try:
+                    new_dir = command[3:].strip()
                     os.chdir(new_dir)
                     cwd = Path.cwd()  # Update the current working directory
-                    logger.info(cmd)
-                elif cmd.startswith("set "):
-                    try:
-                        set_cmd = cmd[4:].strip().split("=")
-                        os.environ[set_cmd[0]] = set_cmd[1]
-                        logger.info(cmd)
-                    except (FileNotFoundError, OSError) as e:
-                        logger.error(f"Error: {e}")
-                        return_codes.append(e)
-                else:
-                    # Execute the command and get the output
-                    logger.info(f"Executing {cmd}")
-                    result = execute_command(cmd, cwd)
-                    return_codes.append(result)
+                    logger.info(command)
+                except (FileNotFoundError, OSError) as e:
+                    logger.error(f"Error: {e}")
+                    return_codes.append(e)
+            elif len(command) > 1 and command[1] == ":":  # Changing Drive
+                new_dir = command[:2].strip()
+                os.chdir(new_dir)
+                cwd = Path.cwd()  # Update the current working directory
+                logger.info(command)
+            elif command.startswith("set "):
+                try:
+                    set_command = command[4:].strip().split("=")
+                    os.environ[set_command[0]] = set_command[1]
+                    logger.info(command)
+                except (FileNotFoundError, OSError) as e:
+                    logger.error(f"Error: {e}")
+                    return_codes.append(e)
+            else:
+                # Execute the command and get the output
+                logger.info(f"Executing {command}")
+                result = execute_command(command, cwd)
+                return_codes.append(result)
+        else:
+            return_codes.append(None)
     return return_codes
 
 

@@ -17,7 +17,7 @@ def read_config(json_path: str, command_set: str) -> list:
     if command_set not in data or not isinstance(data[command_set], list):
         raise ValueError(f"{command_set} not found in {json_path}")
 
-    required_keys = {"hostname", "port", "command"}
+    required_keys = {"hostname", "port", "commands"}
 
     for idx, host in enumerate(data[command_set], start=1):
         missing = required_keys - host.keys()
