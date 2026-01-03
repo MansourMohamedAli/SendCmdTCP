@@ -2,8 +2,6 @@ import argparse
 import asyncio
 import json
 import os
-import pickle
-import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -15,25 +13,13 @@ DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 PROCESS_NOT_FOUND_CODE = 128
 
-HEADER_FMT = "!I"  # 4-byte unsigned int
-HEADER_SIZE = struct.calcsize(HEADER_FMT)
-
-
-async def send_pickle(writer: asyncio.StreamWriter, obj):
-    payload = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
-    header = struct.pack(HEADER_FMT, len(payload))
-    writer.write(header + payload)
-    await writer.drain()
-
 
 def create_error_payload(command, e):
-    result = {
-        f"{command}": {
-            "type": type(e).__name__,
-            "message": str(e),
-        },
+    return {
+        "command": f"{command}",
+        "type": type(e).__name__,
+        "message": str(e),
     }
-    return result
 
 
 def execute_command_sequential(commands, cwd):
@@ -90,7 +76,6 @@ def execute_command(cmd, cwd) -> None | int:
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
         )
         return create_error_payload(cmd, e)
-        # return e
 
     # else:
     #################################################################################
@@ -116,24 +101,16 @@ async def handle_client(reader, writer):
     addr = writer.get_extra_info("peername")
     logger.debug(f"Command from {addr}")
     cwd = Path.cwd()
-    task1 = asyncio.create_task(
-        asyncio.to_thread(execute_command_sequential, commands_list, cwd),
-    )
-    # results = execute_command_sequential(commands_list, cwd)
 
-    results = await task1
-    print(results)
-    # filtered_dict = {key: value for key, value in results.items() if value is not None}
-    # print(filtered_dict)
+    # task1 = asyncio.create_task(
+    #     asyncio.to_thread(execute_command_sequential, commands_list, cwd),
+    # )
+    # results = await task1
 
-    ### JSON ###
+    results = execute_command_sequential(commands_list, cwd)
+
     return_message = json.dumps(results)
     writer.write(return_message.encode("utf-8"))
-    #### JSON END ###
-
-
-# task2 = asyncio.create_task(send_pickle(writer, results))
-# await task2
 
 
 async def main(args=None) -> None:

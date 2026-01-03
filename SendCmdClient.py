@@ -1,8 +1,6 @@
 import argparse
 import asyncio
 import json
-import pickle
-import struct
 import sys
 import time
 
@@ -11,15 +9,6 @@ from read_config import read_config, serialize_commands
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
-HEADER_FMT = "!I"  # 4-byte unsigned int
-HEADER_SIZE = struct.calcsize(HEADER_FMT)
-
-
-async def recv_pickle(reader: asyncio.StreamReader):
-    header = await reader.readexactly(HEADER_SIZE)
-    (length,) = struct.unpack(HEADER_FMT, header)
-    payload = await reader.readexactly(length)
-    return pickle.loads(payload)
 
 
 async def send_command_tcp(host, port, message):
@@ -31,21 +20,14 @@ async def send_command_tcp(host, port, message):
         writer.write(encoded_message)
         await writer.drain()
 
-        ### PICKLE ###
-        # results = await recv_pickle(reader)
-        ### PICKLE END ###
-
-        ### JSON ###
+        results = []
         data = await reader.read(4096)
-        results = json.loads(data.decode("utf-8"))
-        # print(f"Received: {data.decode()!r}")
-        print(f"Received: {results}")
-
-        # if not any(results):
-        #     logger.info(f"All commands sent to {host} and executed with no errors")
-        # else:
-        #     logger.info(f"{host}:Error Occured")
-        ### JSON END ###
+        results_message = json.loads(data.decode("utf-8"))
+        for result in results_message:
+            if result:
+                result["host"] = host
+                result["port"] = port
+                results.append(result)
 
         writer.close()
         await writer.wait_closed()
@@ -143,8 +125,6 @@ async def main(args=None):
     t2 = time.perf_counter()
 
     print(results_list)
-
-    # print(f"Finished in {t2 - t1:.2f} seconds")
 
 
 if __name__ == "__main__":
