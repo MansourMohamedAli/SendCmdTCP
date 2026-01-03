@@ -31,7 +31,21 @@ async def send_command_tcp(host, port, message):
         writer.write(encoded_message)
         await writer.drain()
 
-        results = await recv_pickle(reader)
+        ### PICKLE ###
+        # results = await recv_pickle(reader)
+        ### PICKLE END ###
+
+        ### JSON ###
+        data = await reader.read(4096)
+        results = json.loads(data.decode("utf-8"))
+        # print(f"Received: {data.decode()!r}")
+        print(f"Received: {results}")
+
+        # if not any(results):
+        #     logger.info(f"All commands sent to {host} and executed with no errors")
+        # else:
+        #     logger.info(f"{host}:Error Occured")
+        ### JSON END ###
 
         writer.close()
         await writer.wait_closed()
@@ -128,19 +142,9 @@ async def main(args=None):
     results_list = await asyncio.gather(*tasks, return_exceptions=True)
     t2 = time.perf_counter()
 
-    for host, results in zip(config_data, results_list, strict=True):
-        if isinstance(results, Exception):
-            logger.info(
-                f"Could not send any command to [{host['hostname']}:{host['port']}]. Return message: [{results}]",
-            )
-        else:
-            for command, result in zip(host["commands"], results, strict=True):
-                if result:
-                    logger.info(
-                        f'"{command}" sent to [{host["hostname"]}:{host["port"]}] failed. Return message: [{result}]',
-                    )
+    print(results_list)
 
-    print(f"Finished in {t2 - t1:.2f} seconds")
+    # print(f"Finished in {t2 - t1:.2f} seconds")
 
 
 if __name__ == "__main__":

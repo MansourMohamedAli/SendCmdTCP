@@ -26,13 +26,25 @@ async def send_pickle(writer: asyncio.StreamWriter, obj):
     await writer.drain()
 
 
+def create_error_payload(command, e):
+    result = {
+        f"{command}": {
+            "type": type(e).__name__,
+            "message": str(e),
+        },
+    }
+    return result
+
+
 def execute_command_sequential(commands, cwd):
     return_codes = []
     for command in commands:
         if command:
+            result = None
             if command.lower() == "exit":
                 logger.info("Exiting...")
-                os._exit(0)
+                return_codes[command] = sys.exit
+                return return_codes
             # Check if the command is a "cd" command
             if command.startswith("cd "):
                 try:
@@ -42,7 +54,8 @@ def execute_command_sequential(commands, cwd):
                     logger.info(command)
                 except (FileNotFoundError, OSError) as e:
                     logger.error(f"Error: {e}")
-                    return_codes.append(e)
+                    result: dict[str, dict[str, str]] = create_error_payload(command, e)
+
             elif len(command) > 1 and command[1] == ":":  # Changing Drive
                 new_dir = command[:2].strip()
                 os.chdir(new_dir)
@@ -55,14 +68,14 @@ def execute_command_sequential(commands, cwd):
                     logger.info(command)
                 except (FileNotFoundError, OSError) as e:
                     logger.error(f"Error: {e}")
-                    return_codes.append(e)
+                    result = create_error_payload(command, e)
             else:
                 # Execute the command and get the output
                 logger.info(f"Executing {command}")
                 result = execute_command(command, cwd)
+
+            if result:
                 return_codes.append(result)
-        else:
-            return_codes.append(None)
     return return_codes
 
 
@@ -76,7 +89,9 @@ def execute_command(cmd, cwd) -> None | int:
         logger.error(
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
         )
-        return e
+        return create_error_payload(cmd, e)
+        # return e
+
     # else:
     #################################################################################
     # Since no longer capturing output, stdout and stderr are null. Going
@@ -104,10 +119,21 @@ async def handle_client(reader, writer):
     task1 = asyncio.create_task(
         asyncio.to_thread(execute_command_sequential, commands_list, cwd),
     )
-    results = await task1
+    # results = execute_command_sequential(commands_list, cwd)
 
-    task2 = asyncio.create_task(send_pickle(writer, results))
-    await task2
+    results = await task1
+    print(results)
+    # filtered_dict = {key: value for key, value in results.items() if value is not None}
+    # print(filtered_dict)
+
+    ### JSON ###
+    return_message = json.dumps(results)
+    writer.write(return_message.encode("utf-8"))
+    #### JSON END ###
+
+
+# task2 = asyncio.create_task(send_pickle(writer, results))
+# await task2
 
 
 async def main(args=None) -> None:
