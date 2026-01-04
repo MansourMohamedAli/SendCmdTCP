@@ -124,7 +124,7 @@ async def main(args=None):
     if any(results_list):
         logger.info(results_list)
     else:
-        logger.info(results_list)
+        logger.info("All commands were sent and executed successfully")
     print(f"Finished in {t2 - t1:.2f} seconds")
 
 
