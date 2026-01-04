@@ -5,6 +5,9 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
+
+from pydantic import BaseModel, TypeAdapter
 
 from logger import logger
 
@@ -14,23 +17,52 @@ DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 PROCESS_NOT_FOUND_CODE = 128
 
 
-def create_error_payload(command, e):
-    return {
-        "command": f"{command}",
-        "type": type(e).__name__,
-        "message": str(e),
-    }
+# def create_error_payload(command, e):
+#     return {
+#         "command": f"{command}",
+#         "type": type(e).__name__,
+#         "message": str(e),
+#     }
+
+
+# class Payload(BaseModel):
+#     command: str
+#     type: str
+#     message: str
+#     exit_requested: bool = False
+
+
+class ErrorPayload(BaseModel):
+    command: str
+    type: str
+    message: str
+
+    @classmethod
+    def from_exception(cls, command: str, exc: Exception) -> "ErrorPayload":
+        return cls(
+            command=str(command),
+            type=type(exc).__name__,
+            message=str(exc),
+        )
+
+
+class CommandExecutionResult(BaseModel):
+    errors: list[ErrorPayload]
+    exit_requested: bool = False
 
 
 def execute_command_sequential(commands, cwd):
-    return_codes = []
+    errors: list[ErrorPayload] = []
+    exit_requested = False
+
     for command in commands:
         if command:
             result = None
             if command.lower() == "exit":
                 logger.info("Exiting...")
-                return_codes[command] = sys.exit
-                return return_codes
+                exit_requested = True
+                break
+
             # Check if the command is a "cd" command
             if command.startswith("cd "):
                 try:
@@ -40,7 +72,7 @@ def execute_command_sequential(commands, cwd):
                     logger.info(command)
                 except (FileNotFoundError, OSError) as e:
                     logger.error(f"Error: {e}")
-                    result: dict[str, dict[str, str]] = create_error_payload(command, e)
+                    result = ErrorPayload.from_exception(command, e)
 
             elif len(command) > 1 and command[1] == ":":  # Changing Drive
                 new_dir = command[:2].strip()
@@ -54,28 +86,31 @@ def execute_command_sequential(commands, cwd):
                     logger.info(command)
                 except (FileNotFoundError, OSError) as e:
                     logger.error(f"Error: {e}")
-                    result = create_error_payload(command, e)
+                    result = ErrorPayload.from_exception(command, e)
             else:
                 # Execute the command and get the output
                 logger.info(f"Executing {command}")
                 result = execute_command(command, cwd)
 
             if result:
-                return_codes.append(result)
-    return return_codes
+                errors.append(result)
+
+    return CommandExecutionResult(
+        errors=errors,
+        exit_requested=exit_requested,
+    )
 
 
 def execute_command(cmd, cwd) -> None | int:
     try:
         result = subprocess.run(cmd, shell=True, text=True, cwd=cwd, check=True)
-        # logger.info(f"[{cmd!r} exited with {result.returncode}]")
     except subprocess.CalledProcessError as e:
         if cmd.startswith("taskkill ") and e.returncode == PROCESS_NOT_FOUND_CODE:
             return None
         logger.error(
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
         )
-        return create_error_payload(cmd, e)
+        return ErrorPayload.from_exception(cmd, e)
 
     # else:
     #################################################################################
@@ -102,10 +137,23 @@ async def handle_client(reader, writer):
     logger.debug(f"Command from {addr}")
     cwd = Path.cwd()
 
-    results = execute_command_sequential(commands_list, cwd)
+    results: CommandExecutionResult = execute_command_sequential(commands_list, cwd)
 
-    return_message = json.dumps(results)
+    # adapter = TypeAdapter(list[ErrorPayload])
+    # json_str = adapter.dump_json(results.errors)
+    # print(json_str)
+
+    # json_str = "[" + ",".join(e.model_dump_json() for e in results.errors) + "]"
+    return_message = json.dumps([e.model_dump() for e in results.errors])
+    # print(return_message.encode("utf-8"))
     writer.write(return_message.encode("utf-8"))
+
+    # print(json.dumps(results.errors))
+    # print(results.errors)
+    # print("Results................", results)
+
+    # return_message = json.dumps(results)
+    # writer.write(return_message.encode("utf-8"))
 
 
 async def main(args=None) -> None:
