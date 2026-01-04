@@ -20,14 +20,11 @@ async def send_command_tcp(host, port, message):
         writer.write(encoded_message)
         await writer.drain()
 
-        results = []
+        results = {}
         data = await reader.read(4096)
         results_message = json.loads(data.decode("utf-8"))
-        for result in results_message:
-            if result:
-                result["host"] = host
-                result["port"] = port
-                results.append(result)
+        if results_message:
+            results[f"{host}:{port}"] = results_message
 
         writer.close()
         await writer.wait_closed()
@@ -125,7 +122,11 @@ async def main(args=None):
     t2 = time.perf_counter()
 
     print(results_list)
+    print(f"Finished in {t2 - t1:.2f} seconds")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Shutting down...")
