@@ -102,11 +102,6 @@ async def handle_client(reader, writer):
     logger.debug(f"Command from {addr}")
     cwd = Path.cwd()
 
-    # task1 = asyncio.create_task(
-    #     asyncio.to_thread(execute_command_sequential, commands_list, cwd),
-    # )
-    # results = await task1
-
     results = execute_command_sequential(commands_list, cwd)
 
     return_message = json.dumps(results)

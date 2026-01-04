@@ -121,7 +121,10 @@ async def main(args=None):
     results_list = await asyncio.gather(*tasks, return_exceptions=True)
     t2 = time.perf_counter()
 
-    print(results_list)
+    if any(results_list):
+        logger.info(results_list)
+    else:
+        logger.info(results_list)
     print(f"Finished in {t2 - t1:.2f} seconds")
 
 
