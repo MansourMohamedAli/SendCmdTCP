@@ -35,6 +35,9 @@ class CommandExecutionResult(BaseModel):
     errors: list[ErrorPayload]
     exit_requested: bool = False
 
+async def shutdown_server():
+    logger.info("Exiting...")
+    sys.exit(0)
 
 def execute_command_sequential(commands, cwd):
     errors: list[ErrorPayload] = []
@@ -44,7 +47,6 @@ def execute_command_sequential(commands, cwd):
         if command:
             result = None
             if command.lower() == "exit":
-                logger.info("Exiting...")
                 exit_requested = True
                 break
 
@@ -131,13 +133,8 @@ async def handle_client(reader, writer):
     writer.write(return_message.encode("utf-8"))
     await writer.drain()
 
-    # Not necessary but i should add exit message to the event loop
-    # since it is the proper way to handle the exit. However, since
-    # the exit won't happen until the return message is awaited, it
-    # doesn't make a difference.
-
     if results.exit_requested:
-        os._exit(0)
+        await asyncio.create_task(shutdown_server())
 
 
 async def main(args=None) -> None:
