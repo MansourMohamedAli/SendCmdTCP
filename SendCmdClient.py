@@ -31,16 +31,16 @@ async def send_command_tcp(host, port, message):
 
     except ConnectionRefusedError as e:
         logger.info(f"Connection refused by {host}:{port}. Is the server running?")
-        return e
+        return f"{host}:{port}: {e},"
     except TimeoutError as e:
         logger.info(f"Timeout connecting to {host}:{port}")
-        return e
+        return f"{host}:{port}: {e}"
     except OSError as e:
         logger.info(f"OS error occurred: {e}")
-        return e
+        return f"{host}:{port}: {e}"
     except Exception as e:
         logger.info(f"An unexpected error occurred: {e}")
-        return e
+        return f"{host}:{port}: {e}"
     else:
         return results
 
@@ -123,7 +123,9 @@ async def main(args=None):
 
     if any(results_list):
         logger.info("Error messages were returned:")
-        logger.info(results_list)
+        for result in results_list:
+            if result:
+                logger.info(result)
     else:
         logger.info("All commands were sent and executed successfully")
     print(f"Finished in {t2 - t1:.2f} seconds")
