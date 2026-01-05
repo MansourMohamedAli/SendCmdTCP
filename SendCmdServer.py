@@ -97,6 +97,7 @@ def execute_command(cmd, cwd) -> None | int:
         logger.error(
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
         )
+        return ErrorPayload.from_exception(cmd, e)
     except subprocess.TimeoutExpired as e:
         logger.error(
             f'Process "{e.cmd}" timed out after {TIMEOUT} seconds.',
