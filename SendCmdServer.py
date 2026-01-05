@@ -92,7 +92,7 @@ def execute_command(cmd, cwd) -> None | int:
     try:
         result = subprocess.run(cmd, shell=True, text=True, cwd=cwd, check=True, timeout= TIMEOUT)
     except subprocess.CalledProcessError as e:
-        if cmd.startswith("taskkill ") and e.returncode == PROCESS_NOT_FOUND_CODE:
+        if cmd.lower().startswith("taskkill ") and e.returncode == PROCESS_NOT_FOUND_CODE:
             return None
         logger.error(
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
