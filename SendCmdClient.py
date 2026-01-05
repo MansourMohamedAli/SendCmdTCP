@@ -14,7 +14,7 @@ DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 async def send_command_tcp(host, port, message):
     try:
         reader, writer = await asyncio.open_connection(host, port)
-        print(f"Sending commands: {message} to {host}:{port}")
+        logger.info(f"Sending commands: {message} to {host}:{port}")
 
         encoded_message = serialize_commands(message)
         writer.write(encoded_message)
@@ -80,7 +80,7 @@ def parse_args():
 
 def load_single_host(hostname: str, port: int, command: str) -> list:
     command = command.split(";")
-    print(command)
+    logger.info(command)
     return [{"hostname": hostname, "port": port, "commands": command}]
 
 
@@ -122,6 +122,7 @@ async def main(args=None):
     t2 = time.perf_counter()
 
     if any(results_list):
+        logger.info("Error messages were returned:\n")
         logger.info(results_list)
     else:
         logger.info("All commands were sent and executed successfully")

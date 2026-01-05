@@ -14,6 +14,7 @@ IP_ADDRESS = "0.0.0.0"
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 PROCESS_NOT_FOUND_CODE = 128
+TIMEOUT = 5
 
 
 class ErrorPayload(BaseModel):
@@ -87,12 +88,16 @@ def execute_command_sequential(commands, cwd):
 
 def execute_command(cmd, cwd) -> None | int:
     try:
-        result = subprocess.run(cmd, shell=True, text=True, cwd=cwd, check=True)
+        result = subprocess.run(cmd, shell=True, text=True, cwd=cwd, check=True, timeout= TIMEOUT)
     except subprocess.CalledProcessError as e:
         if cmd.lower().startswith("taskkill ") and e.returncode == PROCESS_NOT_FOUND_CODE:
             return None
         logger.error(
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
+        )
+    except subprocess.TimeoutExpired as e:
+        logger.error(
+            f'Process "{e.cmd}" timed out after {TIMEOUT} seconds.',
         )
         return ErrorPayload.from_exception(cmd, e)
 
@@ -126,8 +131,13 @@ async def handle_client(reader, writer):
     writer.write(return_message.encode("utf-8"))
     await writer.drain()
 
+    # Not necessary but i should add exit message to the event loop
+    # since it is the proper way to handle the exit. However, since
+    # the exit won't happen until the return message is awaited, it
+    # doesn't make a difference.
+
     if results.exit_requested:
-        sys.exit()
+        os._exit(0)
 
 
 async def main(args=None) -> None:
