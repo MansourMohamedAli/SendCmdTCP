@@ -5,9 +5,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel
 
 from logger import logger
 
@@ -15,21 +14,6 @@ IP_ADDRESS = "0.0.0.0"
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 PROCESS_NOT_FOUND_CODE = 128
-
-
-# def create_error_payload(command, e):
-#     return {
-#         "command": f"{command}",
-#         "type": type(e).__name__,
-#         "message": str(e),
-#     }
-
-
-# class Payload(BaseModel):
-#     command: str
-#     type: str
-#     message: str
-#     exit_requested: bool = False
 
 
 class ErrorPayload(BaseModel):
@@ -138,22 +122,12 @@ async def handle_client(reader, writer):
     cwd = Path.cwd()
 
     results: CommandExecutionResult = execute_command_sequential(commands_list, cwd)
-
-    # adapter = TypeAdapter(list[ErrorPayload])
-    # json_str = adapter.dump_json(results.errors)
-    # print(json_str)
-
-    # json_str = "[" + ",".join(e.model_dump_json() for e in results.errors) + "]"
     return_message = json.dumps([e.model_dump() for e in results.errors])
-    # print(return_message.encode("utf-8"))
     writer.write(return_message.encode("utf-8"))
+    await writer.drain()
 
-    # print(json.dumps(results.errors))
-    # print(results.errors)
-    # print("Results................", results)
-
-    # return_message = json.dumps(results)
-    # writer.write(return_message.encode("utf-8"))
+    if results.exit_requested:
+        sys.exit()
 
 
 async def main(args=None) -> None:
