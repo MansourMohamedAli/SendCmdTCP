@@ -25,7 +25,7 @@ class ErrorPayload(BaseModel):
     message: str
 
     @classmethod
-    def from_exception(cls, command: str, exc: Exception) -> "ErrorPayload":
+    def from_exception(cls, command: str, exc: Exception|str) -> "ErrorPayload":
         return cls(
             command=str(command),
             type=type(exc).__name__,
@@ -61,7 +61,7 @@ def execute_command_sequential(commands, cwd):
                     os.chdir(new_dir)
                     cwd = Path.cwd()  # Update the current working directory
                     logger.info(command)
-                except (FileNotFoundError, OSError) as e:
+                except (FileNotFoundError, OSError, IndexError) as e:
                     logger.error(f"Error: {e}")
                     result = ErrorPayload.from_exception(command, e)
 
@@ -72,12 +72,15 @@ def execute_command_sequential(commands, cwd):
                 logger.info(command)
             elif command.startswith("set "):
                 try:
-                    set_command = command[4:].strip().split("=")
+                    set_command = command[4:].strip().split("=", 1)
                     os.environ[set_command[0]] = set_command[1]
                     logger.info(command)
                 except (FileNotFoundError, OSError) as e:
                     logger.error(f"Error: {e}")
                     result = ErrorPayload.from_exception(command, e)
+                except IndexError as e:
+                    logger.error(f"Error: {e}")
+                    result = ErrorPayload.from_exception(command, "the set command is incorrect.")
             else:
                 # Execute the command and get the output
                 logger.info(f"Executing {command}")
