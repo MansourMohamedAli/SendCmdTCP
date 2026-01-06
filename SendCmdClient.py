@@ -12,15 +12,17 @@ DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 
 
 async def send_command_tcp(host, port, message):
+    results = {}
     try:
         reader, writer = await asyncio.open_connection(host, port)
-        logger.info(f"Sending Commands:\nHost: [{host}:{port}], Message: [{", ".join(message)}]")
+        logger.info(
+            f"[{host}:{port}] Commands: [{', '.join(message)}]",
+        )
 
         encoded_message = serialize_commands(message)
         writer.write(encoded_message)
         await writer.drain()
 
-        results = {}
         data = await reader.read(4096)
         results_message = json.loads(data.decode("utf-8"))
         if results_message:
@@ -29,20 +31,10 @@ async def send_command_tcp(host, port, message):
         writer.close()
         await writer.wait_closed()
 
-    except ConnectionRefusedError as e:
-        logger.info(f"Connection refused by {host}:{port}. Is the server running?")
-        return f"{host}:{port}: {e},"
-    except TimeoutError as e:
-        logger.info(f"Timeout connecting to {host}:{port}")
-        return f"{host}:{port}: {e}"
-    except OSError as e:
-        logger.info(f"OS error occurred: {e}")
-        return f"{host}:{port}: {e}"
-    except Exception as e:
-        logger.info(f"An unexpected error occurred: {e}")
-        return f"{host}:{port}: {e}"
-    else:
-        return results
+    except (ConnectionRefusedError, TimeoutError, OSError) as e:
+        results[f"{host}:{port}"] = e
+
+    return results
 
 
 def parse_args():
@@ -80,7 +72,6 @@ def parse_args():
 
 def load_single_host(hostname: str, port: int, command: str) -> list:
     command = command.split(";")
-    logger.info(command)
     return [{"hostname": hostname, "port": port, "commands": command}]
 
 

@@ -35,9 +35,11 @@ class CommandExecutionResult(BaseModel):
     errors: list[ErrorPayload]
     exit_requested: bool = False
 
+
 async def shutdown_server():
     logger.info("Exiting...")
     sys.exit(0)
+
 
 def execute_command_sequential(commands, cwd):
     errors: list[ErrorPayload] = []
@@ -90,9 +92,14 @@ def execute_command_sequential(commands, cwd):
 
 def execute_command(cmd, cwd) -> None | int:
     try:
-        result = subprocess.run(cmd, shell=True, text=True, cwd=cwd, check=True, timeout= TIMEOUT)
+        result = subprocess.run(
+            cmd, shell=True, text=True, cwd=cwd, check=True, timeout=TIMEOUT
+        )
     except subprocess.CalledProcessError as e:
-        if cmd.lower().startswith("taskkill ") and e.returncode == PROCESS_NOT_FOUND_CODE:
+        if (
+            cmd.lower().startswith("taskkill ")
+            and e.returncode == PROCESS_NOT_FOUND_CODE
+        ):
             return None
         logger.error(
             f'Command "{e.cmd}" returned non-zero exit status {e.returncode}. Output: {e.output}',
@@ -152,6 +159,7 @@ async def main(args=None) -> None:
         description="Server for receiving commands from the client.",
     )
     parser.add_argument(
+        "-p",
         "--port",
         type=int,
         default=DEFAULT_SERVER_PORT,
