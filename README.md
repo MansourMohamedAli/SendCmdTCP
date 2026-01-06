@@ -2,7 +2,7 @@
 
 ## SendCmdClient
 #### Usage
-usage: SendCmdClient.exe [-h] [-p [PORT]] [-f CONFIGFILE] [-c COMMANDSET] [hostname] [command]
+usage: SendCmdClient.exe [-h] [-p [PORT]] [-f CONFIGFILE] [-c COMMANDSET] [-v] [hostname] [command]
 
 Run commands on one or more hosts
 
@@ -17,6 +17,7 @@ options:
                         JSON config file with multiple hosts
   -c, --commandset COMMANDSET
                         command set
+  -v, --version         show program's version number and exit
 
 ### Examples:
 ```
@@ -53,14 +54,14 @@ SendCmdServer needs to be running on the remote computer. Two options are availa
 the port can be specified using the -p or --port argument.
 
 ### Usage
-usage: SendCmdServer.exe [-h] [-p PORT]
+usage: SendCmdServer.exe [-h] [-p PORT] [-v]
 
 Server for receiving commands from the client.
 
 options:
   -h, --help       show this help message and exit
   -p, --port PORT  The port to connect to the server. Default is 52000.
-
+  -v, --version    show program's version number and exit
 
 ### Examples:
 

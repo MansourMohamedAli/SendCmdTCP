@@ -10,6 +10,8 @@ from pydantic import BaseModel
 
 from logger import logger
 
+__version__ = "3.0.0"
+
 IP_ADDRESS = "0.0.0.0"
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
@@ -164,6 +166,11 @@ async def main(args=None) -> None:
         type=int,
         default=DEFAULT_SERVER_PORT,
         help=f"The port to connect to the server. Default is {DEFAULT_SERVER_PORT}.",
+    )
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     args = parser.parse_args(args)
 
