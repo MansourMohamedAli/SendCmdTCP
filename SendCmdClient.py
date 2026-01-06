@@ -9,12 +9,13 @@ from read_config import read_config, serialize_commands
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
+TIMEOUT = 5
 
 
 async def send_command_tcp(host, port, message):
     results = {}
     try:
-        reader, writer = await asyncio.open_connection(host, port)
+        reader, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=TIMEOUT)
         logger.info(
             f"[{host}:{port}] Commands: [{', '.join(message)}]",
         )
