@@ -33,31 +33,17 @@ def serialize_commands(commands: list):
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) <= 2:
         print("Usage: python read_hosts.py <config.json>")
         sys.exit(1)
 
     config_file = sys.argv[1]
+    command_set = sys.argv[2]
 
     try:
-        hosts = read_config(config_file)
-
-        for i, host in enumerate(hosts, start=1):
-            hostname = host["hostname"]
-            port = host["port"]
-            command = host["command"]
-
-            print(f"Host #{i}")
-            print(f"  Hostname: {hostname}")
-            print(f"  Port: {port}")
-            print(f"  Command: {command}")
-            print("-" * 30)
-
-            # Here you could:
-            # - execute locally
-            # - execute via SSH
-            # - send to an API
-            # etc.
+        commandsets = read_config(config_file, command_set)
+        for commandset in enumerate(commandsets):
+            print(commandset)
 
     except Exception as e:
         print(f"Error: {e}")
