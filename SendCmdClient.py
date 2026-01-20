@@ -19,11 +19,10 @@ async def send_command_tcp(host, port, message):
     try:
         reader, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=TIMEOUT)
         if isinstance(message, list):
-            message = ", ".join(message)
+            message = ";".join(message)
         logger.info(
             f"[{host}:{port}] Commands: [{message}]",
         )
-
         encoded_message = serialize_commands(message)
         writer.write(encoded_message)
         await writer.drain()
@@ -81,7 +80,6 @@ def parse_args():
 
 
 def load_single_host(hostname: str, port: int, command: str) -> list:
-    # command = command.split(";")
     return [{"hostname": hostname, "port": port, "commands": command}]
 
 

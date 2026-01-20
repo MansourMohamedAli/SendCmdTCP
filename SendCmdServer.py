@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from logger import logger
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 IP_ADDRESS = "0.0.0.0"
 DEFAULT_SERVER_PORT = 52000
@@ -47,11 +47,7 @@ def execute_command_sequential(commands, cwd):
     errors: list[ErrorPayload] = []
     exit_requested = False
 
-    if isinstance(commands, str):
-        if ";" in commands:
-            commands = commands.split(";")
-        else:
-            commands = [commands]
+    commands = commands.split(";") if ";" in commands else [commands]
 
     for command in commands:
         if command:
@@ -147,7 +143,10 @@ async def handle_client(reader, writer):
     logger.debug(f"Command from {addr}")
     cwd = Path.cwd()
 
-    results: CommandExecutionResult = execute_command_sequential(commands_list, cwd)
+    command_task = asyncio.create_task(
+        asyncio.to_thread(execute_command_sequential, commands_list, cwd),
+    )
+    results = await command_task
     return_message = json.dumps([e.model_dump() for e in results.errors])
     writer.write(return_message.encode("utf-8"))
     await writer.drain()

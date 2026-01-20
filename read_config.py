@@ -28,7 +28,7 @@ def read_config(json_path: str, command_set: str) -> list:
     return data[command_set]
 
 
-def serialize_commands(commands: list):
+def serialize_commands(commands: str):
     return json.dumps(commands).encode("utf-8")
 
 
