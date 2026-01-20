@@ -47,6 +47,12 @@ def execute_command_sequential(commands, cwd):
     errors: list[ErrorPayload] = []
     exit_requested = False
 
+    if isinstance(commands, str):
+        if ";" in commands:
+            commands = commands.split(";")
+        else:
+            commands = [commands]
+
     for command in commands:
         if command:
             result = None

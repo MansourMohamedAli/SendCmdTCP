@@ -7,7 +7,7 @@ import time
 from logger import logger
 from read_config import read_config, serialize_commands
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
@@ -18,8 +18,10 @@ async def send_command_tcp(host, port, message):
     results = {}
     try:
         reader, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=TIMEOUT)
+        if isinstance(message, list):
+            message = ", ".join(message)
         logger.info(
-            f"[{host}:{port}] Commands: [{', '.join(message)}]",
+            f"[{host}:{port}] Commands: [{message}]",
         )
 
         encoded_message = serialize_commands(message)
@@ -79,7 +81,7 @@ def parse_args():
 
 
 def load_single_host(hostname: str, port: int, command: str) -> list:
-    command = command.split(";")
+    # command = command.split(";")
     return [{"hostname": hostname, "port": port, "commands": command}]
 
 
