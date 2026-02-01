@@ -26,7 +26,7 @@ def read_config(json_path: str, command_set: str) -> list:
         if missing:
             msg = f"Host #{idx!r} is missing keys: {missing!r}"
             raise ValueError(msg)
-        if "disabled" in payload:
+        if payload.get("disabled") and payload["disabled"] is True:
             diabled_payloads_index.append(idx-1)
     for i in reversed(diabled_payloads_index):
         logger.debug(f"Disabled: {data[command_set][i]["hostname"]}:{data[command_set][i]["port"]}, Commands: {data[command_set][i]["commands"]}")
