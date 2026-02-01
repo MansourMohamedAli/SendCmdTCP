@@ -18,7 +18,7 @@ async def send_command_tcp(host, port, message):
     results = {}
     try:
         reader, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=TIMEOUT)
-        logger.info(
+        logger.debug(
             f"[{host}:{port}] Commands: [{', '.join(message)}]",
         )
 
@@ -79,11 +79,11 @@ def parse_args():
 
 
 def load_single_host(hostname: str, port: int, command: str) -> list:
-    command = command.split(";")
-    return [{"hostname": hostname, "port": port, "commands": command}]
+    commands:list = command.split(";")
+    return [{"hostname": hostname, "port": port, "commands": commands}]
 
 
-async def main(args=None):
+async def main(args=None) -> None:
     if len(sys.argv) < 1:
         logger.info(
             'Type "SendCmdClient.exe -h" or "SendCmdClient.exe --help" for usage.',
@@ -121,17 +121,17 @@ async def main(args=None):
     t2 = time.perf_counter()
 
     if any(results_list):
-        logger.info("Error messages were returned:")
+        logger.warning("Error messages were returned:")
         for result in results_list:
             if result:
-                logger.info(result)
+                logger.warning(result)
     else:
         logger.info("All commands were sent and executed successfully")
-    print(f"Finished in {t2 - t1:.2f} seconds")
+    logger.debug(f"Finished in {t2 - t1:.2f} seconds")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Shutting down...")
+        logger.info("Shutting down...")
