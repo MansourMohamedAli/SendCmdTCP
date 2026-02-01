@@ -4,6 +4,7 @@
 /.vscode
 /dist
 *.bak
+*.zed/
 
 # Configuration file
 sendcmdconfig.json
