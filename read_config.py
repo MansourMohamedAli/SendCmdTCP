@@ -28,15 +28,9 @@ def read_config(json_path: str, command_set: str) -> list:
             raise ValueError(msg)
         if "disabled" in payload:
             diabled_payloads_index.append(idx-1)
-            # logger.debug(f"Optional Keys: {optional_keys} for payload #{idx!r}. {payload["hostname"]}:{payload["port"]}")
-            # logger.debug(type(data[command_set]))
-            # logger.debug(data[command_set])
-            # logger.debug(data[command_set].pop(idx-1))
-            # diabled_payloads.append(data[command_set].pop(idx-1))
-    # logger.debug(f"Disabled: {diabled_payloads}")
     for i in reversed(diabled_payloads_index):
+        logger.debug(f"Disabled: {data[command_set][i]["hostname"]}:{data[command_set][i]["port"]}, Commands: {data[command_set][i]["commands"]}")
         data[command_set].pop(i)
-    # logger.debug(data[command_set])
 
     return data[command_set]
 

@@ -13,6 +13,9 @@ DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
 TIMEOUT = 5
 
+async def shutdown_client():
+    logger.info("Exiting...")
+    sys.exit(0)
 
 async def send_command_tcp(host, port, message):
     results = {}
@@ -95,6 +98,9 @@ async def main(args=None) -> None:
         if args.commandset:
             # CONFIG MODE: ignore positionals
             config_data = read_config(args.configfile, args.commandset)
+            if not config_data:
+                logger.info("All commands disabled.")
+                await asyncio.create_task(shutdown_client())
         else:
             # SINGLE HOST MODE : positionals required
             if not all([args.hostname, args.port, args.command]):
