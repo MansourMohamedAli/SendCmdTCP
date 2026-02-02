@@ -7,7 +7,7 @@ import time
 from logger import logger
 from read_config import read_config, serialize_commands
 
-__version__ = "3.0.0"
+__version__ = "3.0.2"
 
 DEFAULT_SERVER_PORT = 52000
 DEFAULT_MAX_ATTEMPTS = 1  # Maximum number of connection attempts
